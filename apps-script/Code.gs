@@ -17,10 +17,22 @@
  * Script can't answer. Sending as text/plain keeps the request "simple"
  * (no preflight) while the body itself is still JSON text, parsed below
  * via JSON.parse(e.postData.contents).
+ *
+ * SECURITY NOTE: every request must include a matching API key (GET:
+ * ?key=..., POST: { apiKey: ... }), checked in isAuthorized_() below
+ * against the API_KEY script property. Set that property once by running
+ * Security.gs's setApiKey(). This is a shared-secret check, not real
+ * per-user authentication — anyone with the key has full access — but it
+ * stops the API from being casually discoverable/callable by anyone who
+ * finds the public deployment URL.
  */
 
 function doGet(e) {
   try {
+    if (!isAuthorized_(e.parameter.key)) {
+      return jsonResponse_({ success: false, error: 'Unauthorized' });
+    }
+
     const resource = e.parameter.resource;
     let data;
 
@@ -54,6 +66,11 @@ function doGet(e) {
 function doPost(e) {
   try {
     const body = JSON.parse(e.postData.contents);
+
+    if (!isAuthorized_(body.apiKey)) {
+      return jsonResponse_({ success: false, error: 'Unauthorized' });
+    }
+
     const action = body.action;
     let data;
 
@@ -96,6 +113,16 @@ function doPost(e) {
   } catch (err) {
     return jsonResponse_({ success: false, error: err.message });
   }
+}
+
+/**
+ * Checks a request-supplied key against the API_KEY script property (set
+ * once via Security.gs's setApiKey()). Requests without a matching key
+ * are rejected before touching any sheet data.
+ */
+function isAuthorized_(providedKey) {
+  const expected = PropertiesService.getScriptProperties().getProperty('API_KEY');
+  return !!expected && providedKey === expected;
 }
 
 /** Wraps a plain object as a JSON web app response. */

@@ -11,7 +11,7 @@
  * JSON text; the server parses it manually.
  */
 
-import { API_BASE_URL } from './config.js';
+import { API_BASE_URL, API_KEY } from './config.js';
 
 /**
  * Performs a GET request against a resource.
@@ -21,7 +21,7 @@ import { API_BASE_URL } from './config.js';
  * @throws if the network request fails or the API returns success:false
  */
 export async function apiGet(resource, params = {}) {
-  const query = new URLSearchParams({ resource, ...params }).toString();
+  const query = new URLSearchParams({ resource, key: API_KEY, ...params }).toString();
   const response = await fetch(`${API_BASE_URL}?${query}`);
 
   if (!response.ok) {
@@ -46,7 +46,7 @@ export async function apiPost(action, body = {}) {
   const response = await fetch(API_BASE_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action, ...body }),
+    body: JSON.stringify({ action, apiKey: API_KEY, ...body }),
   });
 
   if (!response.ok) {

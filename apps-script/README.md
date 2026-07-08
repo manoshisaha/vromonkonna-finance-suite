@@ -19,14 +19,25 @@ paid services — everything runs on Google's infrastructure for free.
    - Paste in the matching file's contents.
 4. Save the project (`Ctrl+S` / `Cmd+S`).
 
-## 3. Run the one-time setup
+## 3. Set the API key (do this before deploying)
+
+The API rejects any request that doesn't include a matching secret key —
+this stops the API from being casually discoverable by anyone who finds
+your public deployment URL.
+
+1. Add one more script file: **+ → Script**, name it `Security`, paste in `Security.gs`'s contents.
+2. In `js/modules/config.js` on the frontend, note the `API_KEY` value — `Security.gs` already has that exact same key pre-filled, so they match by default. (If you ever want to rotate the key, generate a new random string, update it in **both** places, and redeploy.)
+3. Select `setApiKey` from the function dropdown and click **Run**. Authorize if prompted.
+4. This stores the key as a script property (not visible in the source code itself).
+
+## 4. Run the one-time sheet setup
 
 1. In the script editor toolbar, select `setupSheets` from the function dropdown (next to the Run button).
 2. Click **Run**.
 3. The first time, Google will ask you to authorize the script — click through the consent screens (you'll see an "unverified app" warning since this is your own script; click **Advanced → Go to (project name)** to proceed).
 4. Check the spreadsheet — you should now see 7 tabs: `Trips`, `Participants`, `Expenses`, `Funds`, `Hosts`, `Settings`, `ExpenseCategories`, each with header rows, and `ExpenseCategories` pre-filled with the 12 built-in categories.
 
-## 4. Deploy as a Web App
+## 5. Deploy as a Web App
 
 1. Click **Deploy → New deployment**.
 2. Click the gear icon next to "Select type" → choose **Web app**.
@@ -39,7 +50,7 @@ paid services — everything runs on Google's infrastructure for free.
 
 Keep this URL — it's what the frontend's `js/modules/api-client.js` (built in the next step) will call.
 
-## 5. Redeploying after changes
+## 6. Redeploying after changes
 
 Every time you edit any `.gs` file, you must create a **new version** for the live URL to reflect it:
 - **Deploy → Manage deployments** → pencil icon on the existing deployment → **Version: New version** → **Deploy**.
