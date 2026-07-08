@@ -1,0 +1,36 @@
+/* reports.css
+ * Page-specific styles for Reports: report-type filter bar and export buttons.
+ */
+
+.report-filter-bar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+
+.report-filter-bar .field {
+  margin-bottom: 0;
+  min-width: 180px;
+}
+
+.export-button-group {
+  display: flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+}
+
+@media (max-width: 1100px) {
+  .report-summary-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 560px) {
+  .report-summary-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,135 @@
+<!-- pages/new-trip.html — Create a new trip -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>New Trip · Vromonkonna Finance Suite</title>
+
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/sidebar.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/new-trip.css" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css" />
+</head>
+<body>
+  <div class="app-shell" data-sidebar-open="false">
+    <div id="sidebar-slot"></div>
+
+    <div class="app-main">
+      <div id="topbar-slot"></div>
+
+      <main class="app-content">
+        <div class="page-header">
+          <div class="page-header__titles">
+            <h1>New Trip</h1>
+            <p class="page-header__subtitle">Create a trip, add participants and expenses, and review the live financial breakdown</p>
+          </div>
+        </div>
+
+        <!-- Live Summary: collapsible, above the form (Option C) -->
+        <div id="live-summary-slot"></div>
+
+        <form id="new-trip-form" novalidate>
+          <!-- Trip Information -->
+          <section class="form-section">
+            <div class="form-section__header">
+              <span class="form-section__title">Trip information</span>
+            </div>
+            <div class="panel">
+              <div class="field-grid">
+                <div class="field">
+                  <label class="field__label" for="tripName">Trip name</label>
+                  <input class="field__control" type="text" id="tripName" name="tripName" placeholder="e.g. Sajek Valley Weekend" required />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="destination">Destination</label>
+                  <input class="field__control" type="text" id="destination" name="destination" placeholder="e.g. Sajek Valley" required />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="tripDate">Trip date</label>
+                  <input class="field__control" type="date" id="tripDate" name="tripDate" required />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="hostSelect">Host</label>
+                  <select class="field__control" id="hostSelect" name="hostSelect" required></select>
+                  <span class="field-hint">Pick from the Hosts directory (managed in Settings), or add a new one.</span>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="hostTripCountDisplay">Host lifetime trip count</label>
+                  <input class="field__control field__control--readonly" type="text" id="hostTripCountDisplay" readonly value="—" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="hostCategoryDisplay">Host category</label>
+                  <input class="field__control field__control--readonly" type="text" id="hostCategoryDisplay" readonly value="—" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="packagePrice">Package price (per person)</label>
+                  <input class="field__control" type="number" id="packagePrice" name="packagePrice" min="0" step="1" placeholder="0" required />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="maxParticipants">Maximum participants</label>
+                  <input class="field__control" type="number" id="maxParticipants" name="maxParticipants" min="1" step="1" placeholder="0" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="currentParticipantsDisplay">Current participants</label>
+                  <input class="field__control field__control--readonly" type="text" id="currentParticipantsDisplay" readonly value="0" />
+                  <span class="field-hint">Auto-counted from the Participants list below.</span>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="otherIncome">Other income</label>
+                  <input class="field__control" type="number" id="otherIncome" name="otherIncome" min="0" step="1" placeholder="0" />
+                </div>
+              </div>
+              <div class="field" style="margin-top: 0;">
+                <label class="field__label" for="notes">Notes</label>
+                <textarea class="field__control" id="notes" name="notes" rows="3" placeholder="Optional notes about this trip" style="height: auto; padding: 10px 12px; resize: vertical;"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <!-- Participants -->
+          <section class="form-section">
+            <div class="form-section__header">
+              <span class="form-section__title">Participants</span>
+              <span class="form-section__count" id="participant-count-label">0 participants</span>
+            </div>
+            <div class="panel">
+              <div class="dynamic-row-list" id="participant-rows"></div>
+              <div class="empty-row-hint" id="participant-empty-hint">No participants added yet.</div>
+              <button type="button" class="btn btn-secondary" id="add-participant-btn">
+                <i class="ti ti-plus" aria-hidden="true"></i> Add participant
+              </button>
+            </div>
+          </section>
+
+          <!-- Expenses -->
+          <section class="form-section">
+            <div class="form-section__header">
+              <span class="form-section__title">Expenses</span>
+              <span class="form-section__count" id="expense-count-label">0 expenses</span>
+            </div>
+            <div class="panel">
+              <div class="dynamic-row-list" id="expense-rows"></div>
+              <div class="empty-row-hint" id="expense-empty-hint">No expenses added yet.</div>
+              <button type="button" class="btn btn-secondary" id="add-expense-btn">
+                <i class="ti ti-plus" aria-hidden="true"></i> Add expense
+              </button>
+            </div>
+          </section>
+
+          <div class="form-footer">
+            <a class="btn btn-secondary" href="../index.html">Cancel</a>
+            <button type="submit" class="btn btn-primary" id="save-trip-btn">Save trip</button>
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="../js/new-trip.js"></script>
+</body>
+</html>

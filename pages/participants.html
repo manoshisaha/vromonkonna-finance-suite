@@ -1,0 +1,52 @@
+<!-- pages/participants.html — Cross-trip participant directory, keyed by phone number -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Participants · Vromonkonna Finance Suite</title>
+
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/sidebar.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/trip-history.css" />
+  <link rel="stylesheet" href="../css/participants.css" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css" />
+</head>
+<body>
+  <div class="app-shell" data-sidebar-open="false">
+    <div id="sidebar-slot"></div>
+
+    <div class="app-main">
+      <div id="topbar-slot"></div>
+
+      <main class="app-content">
+        <div class="page-header">
+          <div class="page-header__titles">
+            <h1>Participants</h1>
+            <p class="page-header__subtitle">Every participant across all trips, grouped by phone number</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="directory-toolbar">
+            <div class="directory-toolbar__search">
+              <i class="ti ti-search directory-toolbar__search-icon" aria-hidden="true"></i>
+              <input class="field__control" type="search" id="directory-search" placeholder="Search by name or phone" />
+            </div>
+            <span class="history-toolbar__results-count" id="directory-results-count">0 people</span>
+          </div>
+
+          <div class="directory-list" id="directory-list"></div>
+          <div class="directory-empty" id="directory-empty" hidden>No participants match your search.</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="../js/participants.js"></script>
+</body>
+</html>

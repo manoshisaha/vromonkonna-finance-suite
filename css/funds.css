@@ -1,0 +1,80 @@
+/* funds.css
+ * Page-specific styles for Funds: tab bar, balance hero, ledger table.
+ */
+
+.fund-tabs {
+  display: flex;
+  gap: var(--space-1);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: var(--space-5);
+}
+
+.fund-tab {
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-muted);
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.fund-tab:hover {
+  color: var(--color-text-primary);
+}
+
+.fund-tab[aria-selected="true"] {
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
+}
+
+.fund-balance-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-5);
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.fund-balance-hero__value {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.01em;
+}
+
+.fund-balance-hero__label {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.ledger-type-badge {
+  font-size: var(--font-size-xs);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-medium);
+}
+
+.ledger-type-badge--contribution {
+  background-color: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.ledger-type-badge--withdrawal {
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.ledger-type-badge--adjustment {
+  background-color: var(--color-info-soft);
+  color: var(--color-info);
+}
+
+.ledger-amount--negative {
+  color: var(--color-danger);
+}
+
+.ledger-amount--positive {
+  color: var(--color-success);
+}

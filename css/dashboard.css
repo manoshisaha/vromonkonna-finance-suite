@@ -1,0 +1,12 @@
+/* dashboard.css
+ * Page-specific overrides for the Dashboard. Shared card/chart/table
+ * primitives live in components.css — keep this file minimal.
+ */
+
+#chart-revenue-by-month,
+#chart-profit-by-month,
+#chart-expense-categories,
+#chart-top-destinations {
+  width: 100% !important;
+  height: 100% !important;
+}

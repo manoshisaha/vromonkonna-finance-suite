@@ -1,0 +1,167 @@
+/* participants.css
+ * Page-specific styles for the Participants directory: expandable rows,
+ * trip sub-lists, and data-quality flag badges.
+ */
+
+.directory-toolbar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.directory-toolbar__search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.directory-toolbar__search input {
+  width: 100%;
+  padding-left: 36px;
+}
+
+.directory-toolbar__search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: 16px;
+}
+
+.directory-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.directory-row {
+  border-bottom: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+}
+
+.directory-row:last-child {
+  border-bottom: none;
+}
+
+.directory-row__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+}
+
+.directory-row__summary:hover {
+  background-color: var(--color-surface-alt);
+}
+
+.directory-row__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-accent-soft);
+  color: var(--color-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  flex-shrink: 0;
+}
+
+.directory-row__identity {
+  min-width: 160px;
+  flex-shrink: 0;
+}
+
+.directory-row__name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.directory-row__phone {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-muted);
+}
+
+.directory-row__stats {
+  flex: 1;
+  display: flex;
+  gap: var(--space-5);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  flex-wrap: wrap;
+}
+
+.directory-row__stat strong {
+  color: var(--color-text-primary);
+  font-weight: var(--font-weight-medium);
+}
+
+.directory-row__chevron {
+  transition: transform var(--transition-fast);
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.directory-row[data-expanded="true"] .directory-row__chevron {
+  transform: rotate(180deg);
+}
+
+.directory-row__detail {
+  display: none;
+  padding: 0 var(--space-4) var(--space-4) calc(var(--space-4) + 32px + var(--space-3));
+}
+
+.directory-row[data-expanded="true"] .directory-row__detail {
+  display: block;
+}
+
+.directory-row__trip-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-xs);
+}
+
+.directory-row__trip-table th {
+  text-align: left;
+  color: var(--color-text-muted);
+  font-weight: var(--font-weight-medium);
+  padding: var(--space-2) var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.directory-row__trip-table td {
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.flag-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: var(--font-weight-medium);
+  padding: 2px 6px;
+  border-radius: var(--radius-full);
+  background-color: var(--color-warning-soft);
+  color: var(--color-warning);
+}
+
+.directory-empty {
+  padding: var(--space-10);
+  text-align: center;
+  color: var(--color-text-muted);
+}

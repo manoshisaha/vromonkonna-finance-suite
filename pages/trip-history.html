@@ -1,0 +1,102 @@
+<!-- pages/trip-history.html — Browse, search, filter, and manage past/upcoming trips -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trip History · Vromonkonna Finance Suite</title>
+
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/sidebar.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/trip-history.css" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css" />
+</head>
+<body>
+  <div class="app-shell" data-sidebar-open="false">
+    <div id="sidebar-slot"></div>
+
+    <div class="app-main">
+      <div id="topbar-slot"></div>
+
+      <main class="app-content">
+        <div class="page-header">
+          <div class="page-header__titles">
+            <h1>Trip History</h1>
+            <p class="page-header__subtitle">Search, sort, filter, and manage every trip</p>
+          </div>
+          <div class="page-header__actions">
+            <a class="btn btn-primary" href="new-trip.html">+ New Trip</a>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="history-toolbar">
+            <div class="history-toolbar__search">
+              <i class="ti ti-search history-toolbar__search-icon" aria-hidden="true"></i>
+              <input class="field__control" type="search" id="search-input" placeholder="Search by trip, destination, or host" />
+            </div>
+            <select id="status-filter" aria-label="Filter by status">
+              <option value="all">All statuses</option>
+              <option value="Completed">Completed</option>
+              <option value="Upcoming">Upcoming</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
+            <select id="destination-filter" aria-label="Filter by destination">
+              <option value="all">All destinations</option>
+            </select>
+            <select id="host-filter" aria-label="Filter by host">
+              <option value="all">All hosts</option>
+            </select>
+            <span class="history-toolbar__results-count" id="results-count">16 trips</span>
+          </div>
+
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="sortable-th" data-sort-key="tripName">
+                    <span class="sortable-th__inner">Trip <i class="ti ti-arrows-sort sortable-th__icon" aria-hidden="true"></i></span>
+                  </th>
+                  <th class="sortable-th" data-sort-key="destination">
+                    <span class="sortable-th__inner">Destination <i class="ti ti-arrows-sort sortable-th__icon" aria-hidden="true"></i></span>
+                  </th>
+                  <th class="sortable-th" data-sort-key="hostName">
+                    <span class="sortable-th__inner">Host <i class="ti ti-arrows-sort sortable-th__icon" aria-hidden="true"></i></span>
+                  </th>
+                  <th class="sortable-th" data-sort-key="tripDate">
+                    <span class="sortable-th__inner">Date <i class="ti ti-arrows-sort sortable-th__icon" aria-hidden="true"></i></span>
+                  </th>
+                  <th class="sortable-th" data-sort-key="participantCount">
+                    <span class="sortable-th__inner">Participants <i class="ti ti-arrows-sort sortable-th__icon" aria-hidden="true"></i></span>
+                  </th>
+                  <th>Status</th>
+                  <th class="sortable-th" data-sort-key="financials.grossProfit">
+                    <span class="sortable-th__inner">Gross profit <i class="ti ti-arrows-sort sortable-th__icon" aria-hidden="true"></i></span>
+                  </th>
+                  <th class="sortable-th" data-sort-key="financials.organizationProfit">
+                    <span class="sortable-th__inner">Org profit <i class="ti ti-arrows-sort sortable-th__icon" aria-hidden="true"></i></span>
+                  </th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="trip-table-body">
+                <!-- Rows rendered by js/trip-history.js -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="trip-history-empty" id="empty-state" hidden>
+            No trips match your search or filters.
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="../js/trip-history.js"></script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!-- index.html — Dashboard page (app landing page) -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard · Vromonkonna Finance Suite</title>
+
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/sidebar.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/dashboard.css" />
+
+  <!-- Chart.js (CDN, no build step / no paid service) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+  <div class="app-shell" data-sidebar-open="false">
+    <div id="sidebar-slot"><!-- components/sidebar.js renders here --></div>
+
+    <div class="app-main">
+      <div id="topbar-slot"><!-- components/topbar.js renders here --></div>
+
+      <main class="app-content">
+        <div class="page-header">
+          <div class="page-header__titles">
+            <h1>Dashboard</h1>
+            <p class="page-header__subtitle">Overview of trips, revenue, and fund balances</p>
+          </div>
+          <div class="page-header__actions">
+            <a class="btn btn-secondary" href="pages/reports.html">View Reports</a>
+            <a class="btn btn-primary" href="pages/new-trip.html">+ New Trip</a>
+          </div>
+        </div>
+
+        <!-- KPI Stat Cards -->
+        <section class="stat-grid" id="stat-grid" aria-label="Key financial metrics">
+          <!-- Populated by js/dashboard.js via components/stat-card.js -->
+        </section>
+
+        <!-- Charts -->
+        <section class="chart-grid" aria-label="Financial charts">
+          <div class="panel">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Revenue by Month</div>
+                <div class="panel__subtitle">Current fiscal year</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="chart-revenue-by-month"></canvas>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Profit by Month</div>
+                <div class="panel__subtitle">Adjusted profit trend</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="chart-profit-by-month"></canvas>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Expense Categories</div>
+                <div class="panel__subtitle">Breakdown across all trips</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="chart-expense-categories"></canvas>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__header">
+              <div>
+                <div class="panel__title">Most Profitable Destinations</div>
+                <div class="panel__subtitle">Top 5 by organization profit</div>
+              </div>
+            </div>
+            <div class="chart-canvas-wrap">
+              <canvas id="chart-top-destinations"></canvas>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>

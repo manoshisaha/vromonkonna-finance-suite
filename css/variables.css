@@ -1,0 +1,132 @@
+/* variables.css
+ * Design tokens for Vromonkonna Finance Suite.
+ * Single source of truth for color, spacing, radius, shadow, and type scale.
+ * Every other stylesheet must consume these tokens instead of hard-coded values.
+ */
+
+:root {
+  /* ---------- Brand & Semantic Colors (Light) ---------- */
+  --color-bg: #f7f7f8;
+  --color-surface: #ffffff;
+  --color-surface-alt: #fafafb;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+
+  --color-text-primary: #14151a;
+  --color-text-secondary: #565a66;
+  --color-text-muted: #8a8f9c;
+  --color-text-inverse: #ffffff;
+
+  --color-accent: #5b5bf6;
+  --color-accent-hover: #4747e0;
+  --color-accent-soft: #eeeeff;
+
+  --color-success: #12a454;
+  --color-success-soft: #e6f7ed;
+  --color-warning: #d78c1f;
+  --color-warning-soft: #fdf3e2;
+  --color-danger: #e0463f;
+  --color-danger-soft: #fdecea;
+  --color-info: #2f7de1;
+  --color-info-soft: #e9f2fd;
+
+  /* Fund-specific accent colors (used for cards/charts) */
+  --color-fund-org: #5b5bf6;
+  --color-fund-social: #2f7de1;
+  --color-fund-tshirt: #d78c1f;
+  --color-fund-host: #12a454;
+
+  /* ---------- Elevation ---------- */
+  --shadow-xs: 0 1px 2px rgba(16, 17, 22, 0.04);
+  --shadow-sm: 0 1px 3px rgba(16, 17, 22, 0.06), 0 1px 2px rgba(16, 17, 22, 0.04);
+  --shadow-md: 0 4px 12px rgba(16, 17, 22, 0.08);
+  --shadow-lg: 0 12px 32px rgba(16, 17, 22, 0.12);
+
+  /* ---------- Radius ---------- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-full: 999px;
+
+  /* ---------- Spacing scale (4px base) ---------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* ---------- Typography ---------- */
+  --font-family-base: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-family-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-base: 14px;
+  --font-size-md: 15px;
+  --font-size-lg: 18px;
+  --font-size-xl: 22px;
+  --font-size-2xl: 28px;
+  --font-size-3xl: 34px;
+
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+
+  /* ---------- Layout ---------- */
+  --sidebar-width: 264px;
+  --sidebar-width-collapsed: 76px;
+  --topbar-height: 64px;
+  --content-max-width: 1440px;
+
+  /* ---------- Motion ---------- */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms ease;
+  --transition-slow: 320ms ease;
+
+  /* ---------- Z-index scale ---------- */
+  --z-sidebar: 100;
+  --z-topbar: 90;
+  --z-modal: 1000;
+  --z-toast: 1100;
+}
+
+/* ---------- Dark Mode Overrides ---------- */
+:root[data-theme="dark"] {
+  --color-bg: #0f1015;
+  --color-surface: #17181f;
+  --color-surface-alt: #1d1e26;
+  --color-border: #2a2c36;
+  --color-border-strong: #383b47;
+
+  --color-text-primary: #f3f4f6;
+  --color-text-secondary: #b0b3bf;
+  --color-text-muted: #6f7280;
+  --color-text-inverse: #14151a;
+
+  --color-accent: #7c7cf9;
+  --color-accent-hover: #9090fa;
+  --color-accent-soft: #23233f;
+
+  --color-success: #2fd57e;
+  --color-success-soft: #103322;
+  --color-warning: #f0a63b;
+  --color-warning-soft: #3a2c11;
+  --color-danger: #f16b64;
+  --color-danger-soft: #3a1917;
+  --color-info: #5a9dee;
+  --color-info-soft: #112b45;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.24);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.36);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.48);
+}

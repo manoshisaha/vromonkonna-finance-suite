@@ -1,0 +1,195 @@
+<!-- pages/settings.html — Organization profile, pricing defaults, host tiers, hosts, expense categories, data management -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Settings · Vromonkonna Finance Suite</title>
+
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/sidebar.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/new-trip.css" />
+  <link rel="stylesheet" href="../css/settings.css" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css" />
+</head>
+<body>
+  <div class="app-shell" data-sidebar-open="false">
+    <div id="sidebar-slot"></div>
+
+    <div class="app-main">
+      <div id="topbar-slot"></div>
+
+      <main class="app-content">
+        <div class="page-header">
+          <div class="page-header__titles">
+            <h1>Settings</h1>
+            <p class="page-header__subtitle">Organization profile, pricing, host tiers, and data</p>
+          </div>
+        </div>
+
+        <form id="settings-form" novalidate>
+          <!-- Organization -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">Organization</div>
+              <div class="logo-upload-row">
+                <div class="logo-preview" id="logo-preview">Logo</div>
+                <div>
+                  <input type="file" id="logo-file-input" accept="image/*" class="visually-hidden" />
+                  <button type="button" class="btn btn-secondary btn-sm" id="logo-upload-btn">Upload logo</button>
+                </div>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label class="field__label" for="orgName">Organization name</label>
+                  <input class="field__control" type="text" id="orgName" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="currency">Currency</label>
+                  <select class="field__control" id="currency">
+                    <option value="BDT">BDT (৳)</option>
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="INR">INR (₹)</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="contactPhone">Contact phone</label>
+                  <input class="field__control" type="tel" id="contactPhone" placeholder="01XXXXXXXXX" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="contactEmail">Contact email</label>
+                  <input class="field__control" type="email" id="contactEmail" placeholder="info@vromonkonna.com" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="fiscalYearStartMonth">Fiscal year starts</label>
+                  <select class="field__control" id="fiscalYearStartMonth">
+                    <option value="1">January</option>
+                    <option value="4">April</option>
+                    <option value="7">July</option>
+                    <option value="10">October</option>
+                  </select>
+                </div>
+              </div>
+              <div class="field" style="margin-top: 0;">
+                <label class="field__label" for="address">Address</label>
+                <input class="field__control" type="text" id="address" placeholder="Used on printed trip summaries and reports" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Pricing defaults -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">Pricing defaults</div>
+              <div class="settings-section__hint">Package price isn't here — it varies per trip and is set in New Trip each time.</div>
+              <div class="settings-two-col">
+                <div class="field" style="margin-bottom: 0;">
+                  <label class="field__label" for="tshirtPrice">T-shirt price (per participant)</label>
+                  <input class="field__control" type="number" id="tshirtPrice" min="0" step="1" />
+                </div>
+                <div class="field" style="margin-bottom: 0;">
+                  <label class="field__label" for="socialMediaFundPercent">Social media fund (%)</label>
+                  <input class="field__control" type="number" id="socialMediaFundPercent" min="0" max="100" step="1" />
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Host payment tiers -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">Host payment tiers</div>
+              <div class="settings-section__hint">These feed directly into the calculation engine used on Dashboard, New Trip, Trip History, Reports, and Funds.</div>
+              <table class="host-tier-table">
+                <thead>
+                  <tr><th>Tier</th><th>Trip range</th><th>Payment</th><th>Minimum</th></tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Beginner</td>
+                    <td>0 – <input type="number" id="beginnerMaxTrips" min="0" /></td>
+                    <td>Fixed <input type="number" id="beginnerAmount" min="0" /></td>
+                    <td>—</td>
+                  </tr>
+                  <tr>
+                    <td>Intermediate</td>
+                    <td><span id="intermediateMinTripsLabel"></span> – <input type="number" id="intermediateMaxTrips" min="0" /></td>
+                    <td><input type="number" id="intermediatePercent" min="0" max="100" /> %</td>
+                    <td><input type="number" id="intermediateMinimum" min="0" /></td>
+                  </tr>
+                  <tr>
+                    <td>Advanced</td>
+                    <td><span id="advancedMinTripsLabel"></span>+</td>
+                    <td><input type="number" id="advancedPercent" min="0" max="100" /> %</td>
+                    <td><input type="number" id="advancedMinimum" min="0" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- Hosts directory -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">Hosts</div>
+              <div class="settings-section__hint">Central place to track each host's lifetime trip count — New Trip picks from this list instead of retyping it.</div>
+              <div class="data-table-wrap">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Name</th><th>Lifetime trips</th><th>Tier</th><th></th></tr>
+                  </thead>
+                  <tbody id="hosts-table-body"></tbody>
+                </table>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" id="add-host-btn" style="margin-top: var(--space-3);">
+                <i class="ti ti-plus" aria-hidden="true"></i> Add host
+              </button>
+            </div>
+          </section>
+
+          <!-- Expense categories -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">Expense categories</div>
+              <div class="settings-section__hint">The 12 built-in categories can't be removed. Add your own below.</div>
+              <div class="chip-list" id="expense-category-chips"></div>
+              <div style="display:flex; gap: var(--space-2);">
+                <input class="field__control" type="text" id="new-category-input" placeholder="e.g. Boat rental" style="max-width: 240px;" />
+                <button type="button" class="btn btn-secondary btn-sm" id="add-category-btn">Add category</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- Data management -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">Data management</div>
+              <div class="settings-section__hint">Funds and settings are currently stored in this browser only, until the real database (Step 9) is connected.</div>
+              <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" id="export-local-data-btn">
+                  <i class="ti ti-download" aria-hidden="true"></i> Export all local data
+                </button>
+                <button type="button" class="btn btn-danger" id="reset-demo-data-btn">
+                  <i class="ti ti-refresh" aria-hidden="true"></i> Reset demo data
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <div class="settings-footer">
+            <button type="button" class="btn btn-secondary" id="reset-defaults-btn">Reset to defaults</button>
+            <button type="submit" class="btn btn-primary">Save settings</button>
+          </div>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="../js/settings.js"></script>
+</body>
+</html>

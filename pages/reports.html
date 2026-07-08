@@ -1,0 +1,93 @@
+<!-- pages/reports.html — Reports by month, year, destination, or host, with export -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports · Vromonkonna Finance Suite</title>
+
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/base.css" />
+  <link rel="stylesheet" href="../css/layout.css" />
+  <link rel="stylesheet" href="../css/sidebar.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/trip-history.css" />
+  <link rel="stylesheet" href="../css/reports.css" />
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css" />
+
+  <!-- Export libraries: client-side PDF and Excel generation, no server -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+</head>
+<body>
+  <div class="app-shell" data-sidebar-open="false">
+    <div id="sidebar-slot"></div>
+
+    <div class="app-main">
+      <div id="topbar-slot"></div>
+
+      <main class="app-content">
+        <div class="page-header">
+          <div class="page-header__titles">
+            <h1>Reports</h1>
+            <p class="page-header__subtitle">Financial summaries by month, year, destination, or host</p>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="report-filter-bar">
+            <div class="field">
+              <label class="field__label" for="report-type">Report by</label>
+              <select class="field__control" id="report-type">
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+                <option value="destination">Destination</option>
+                <option value="host">Host</option>
+              </select>
+            </div>
+            <div class="field" id="report-value-field">
+              <label class="field__label" for="report-value">Month</label>
+              <input class="field__control" type="month" id="report-value" />
+            </div>
+            <div class="export-button-group">
+              <button type="button" class="btn btn-secondary" id="export-csv-btn">
+                <i class="ti ti-file-type-csv" aria-hidden="true"></i> CSV
+              </button>
+              <button type="button" class="btn btn-secondary" id="export-excel-btn">
+                <i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Excel
+              </button>
+              <button type="button" class="btn btn-secondary" id="export-pdf-btn">
+                <i class="ti ti-file-type-pdf" aria-hidden="true"></i> PDF
+              </button>
+            </div>
+          </div>
+
+          <section class="report-summary-grid" id="report-summary-grid" aria-label="Report summary"></section>
+
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Trip</th>
+                  <th>Destination</th>
+                  <th>Host</th>
+                  <th>Date</th>
+                  <th>Participants</th>
+                  <th>Status</th>
+                  <th>Income</th>
+                  <th>Org profit</th>
+                </tr>
+              </thead>
+              <tbody id="report-table-body"></tbody>
+            </table>
+          </div>
+          <div class="trip-history-empty" id="report-empty" hidden>No trips match this report.</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="../js/reports.js"></script>
+</body>
+</html>

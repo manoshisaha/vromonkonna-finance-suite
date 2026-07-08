@@ -1,0 +1,103 @@
+/* trip-history.css
+ * Page-specific styles for Trip History: search/filter toolbar,
+ * sortable column headers, and row action buttons.
+ */
+
+.history-toolbar {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  margin-bottom: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.history-toolbar__search {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.history-toolbar__search input {
+  width: 100%;
+  padding-left: 36px;
+}
+
+.history-toolbar__search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  font-size: 16px;
+}
+
+.history-toolbar select {
+  height: 38px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background-color: var(--color-surface);
+  color: var(--color-text-primary);
+  min-width: 140px;
+}
+
+.history-toolbar__results-count {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.sortable-th {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.sortable-th__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sortable-th__icon {
+  font-size: 12px;
+  opacity: 0.4;
+}
+
+.sortable-th[data-active="true"] .sortable-th__icon {
+  opacity: 1;
+  color: var(--color-accent);
+}
+
+.row-actions {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.row-actions .icon-button {
+  width: 30px;
+  height: 30px;
+}
+
+.row-actions .icon-button--danger:hover {
+  background-color: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.trip-history-empty {
+  padding: var(--space-10);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+@media print {
+  .sidebar, .topbar, .history-toolbar, .row-actions, .page-header__actions {
+    display: none !important;
+  }
+  .app-shell {
+    display: block !important;
+  }
+  .app-content {
+    padding: 0 !important;
+  }
+}
