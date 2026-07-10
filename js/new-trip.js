@@ -8,21 +8,31 @@
  *     page lives inside /pages/.
  *   - Load hosts, expense categories, and calculation settings from the
  *     real Apps Script API once at page load.
+ *   - Manage a Host Team: one or more hosts, each with a Role (Lead/
+ *     Co-host/Support). Exactly one Lead is required. On domestic trips,
+ *     the Lead's tier alone determines the Host Budget (Co-host/Support
+ *     tiers are ignored for budget purposes); on foreign trips, the
+ *     budget is a per-participant rate × participant count instead. The
+ *     budget is then split among the team by role weight — see
+ *     calculateTripFinancials()/distributeHostBudget() in calculations.js.
  *   - Manage dynamic participant and expense rows.
- *   - Recalculate financials on every relevant input change using the
- *     shared calculation engine (js/modules/calculations.js) and render
- *     results into the collapsible live summary panel.
- *   - Handle Save Trip: POSTs to the real API (js/modules/trips-store.js),
- *     including the last-calculated financials so the backend can write
- *     fund contribution rows. The backend increments the host's lifetime
- *     trip count automatically on creation — the frontend no longer needs to.
+ *   - Recalculate financials on every relevant input change and render
+ *     results (including the per-host breakdown) into the collapsible
+ *     live summary panel.
+ *   - Handle Save Trip: validates the host team (validateHostTeam()),
+ *     then POSTs to the real API (js/modules/trips-store.js), including
+ *     the last-calculated financials so the backend can write fund
+ *     contribution rows and per-host payment rows. The backend
+ *     increments every assigned host's lifetime trip count automatically
+ *     on creation.
  */
 
 import { initShell, showToast } from './app.js';
 import { renderLiveSummaryPanel } from '../components/live-summary-panel.js';
 import { createParticipantRow, getParticipantRowData } from '../components/participant-row.js';
 import { createExpenseRow, getExpenseRowData } from '../components/expense-row.js';
-import { calculateTripFinancials, determineHostCategory } from './modules/calculations.js';
+import { createHostRow, refreshHostRowOptions, getHostRowData, setHostRowRole, setHostRowTierDisplay, ADD_HOST_OPTION_VALUE } from '../components/host-row.js';
+import { calculateTripFinancials, determineHostCategory, validateHostTeam } from './modules/calculations.js';
 import { getCalculationSettings } from './modules/settings-store.js';
 import { getHosts, addHost } from './modules/host-directory.js';
 import { getAllCategories } from './modules/expense-category-store.js';
@@ -57,6 +67,10 @@ function readPrefillFromSessionStorage() {
 
 const summaryPanel = renderLiveSummaryPanel(document.getElementById('live-summary-slot'));
 
+const hostRowsEl = document.getElementById('host-rows');
+const hostEmptyHint = document.getElementById('host-empty-hint');
+const hostCountLabel = document.getElementById('host-count-label');
+
 const participantRowsEl = document.getElementById('participant-rows');
 const expenseRowsEl = document.getElementById('expense-rows');
 const participantEmptyHint = document.getElementById('participant-empty-hint');
@@ -64,16 +78,18 @@ const expenseEmptyHint = document.getElementById('expense-empty-hint');
 const participantCountLabel = document.getElementById('participant-count-label');
 const expenseCountLabel = document.getElementById('expense-count-label');
 
-const hostSelect = document.getElementById('hostSelect');
-const hostTripCountDisplay = document.getElementById('hostTripCountDisplay');
-const hostCategoryDisplay = document.getElementById('hostCategoryDisplay');
 const currentParticipantsDisplay = document.getElementById('currentParticipantsDisplay');
 const packagePriceInput = document.getElementById('packagePrice');
 const otherIncomeInput = document.getElementById('otherIncome');
 const saveTripBtn = document.getElementById('save-trip-btn');
 
+const tripTypeSelect = document.getElementById('tripType');
+const foreignRateField = document.getElementById('foreignRateField');
+const foreignRatePerParticipantField = document.getElementById('foreignRatePerParticipantField');
+const foreignHostBaseInput = document.getElementById('foreignHostBase');
+const foreignHostRateInput = document.getElementById('foreignHostRate');
+
 const CATEGORY_LABELS = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
-const ADD_HOST_OPTION_VALUE = '__add_new_host__';
 
 /** ---------- Module state, populated once during init() ---------- */
 
@@ -82,20 +98,46 @@ let expenseCategories = [];
 let calcSettings = null;
 let lastFinancials = null;
 
-function populateHostSelect(selectedName) {
-  hostSelect.innerHTML = `
-    <option value="" disabled ${!selectedName ? 'selected' : ''}>Select a host</option>
-    ${hosts.map((h) => `<option value="${h.name}" ${h.name === selectedName ? 'selected' : ''}>${h.name} (${h.lifetimeTripCount} trips)</option>`).join('')}
-    <option value="${ADD_HOST_OPTION_VALUE}">+ Add new host...</option>
-  `;
+/** ---------- Trip type (domestic / foreign) ---------- */
+
+function updateTripTypeVisibility() {
+  const isForeign = tripTypeSelect.value === 'foreign';
+  foreignRateField.hidden = !isForeign;
+  foreignRatePerParticipantField.hidden = !isForeign;
 }
 
-function getSelectedHost() {
-  return hosts.find((h) => h.name === hostSelect.value) || null;
+tripTypeSelect.addEventListener('change', () => {
+  updateTripTypeVisibility();
+  recalculate();
+});
+foreignHostBaseInput.addEventListener('input', recalculate);
+foreignHostRateInput.addEventListener('input', recalculate);
+updateTripTypeVisibility();
+
+/** ---------- Hosts ---------- */
+
+function addHostRow() {
+  const isFirstHost = hostRowsEl.children.length === 0;
+  const row = createHostRow(hosts, {
+    defaultRole: isFirstHost ? 'lead' : 'coHost',
+    onChange: (row) => handleHostRowChange(row),
+    onRoleChange: recalculate,
+    onRemove: () => {
+      updateHostCount();
+      recalculate();
+    },
+  });
+  hostRowsEl.appendChild(row);
+  updateHostCount();
+  recalculate();
 }
 
-hostSelect.addEventListener('change', async () => {
-  if (hostSelect.value === ADD_HOST_OPTION_VALUE) {
+document.getElementById('add-host-btn').addEventListener('click', addHostRow);
+
+async function handleHostRowChange(row) {
+  const select = row.querySelector('[name="hostName"]');
+
+  if (select.value === ADD_HOST_OPTION_VALUE) {
     const result = await formModal({
       title: 'Add new host',
       fields: [
@@ -108,18 +150,44 @@ hostSelect.addEventListener('change', async () => {
     if (result) {
       try {
         hosts = await addHost({ name: result.name, lifetimeTripCount: result.lifetimeTripCount });
-        populateHostSelect(result.name);
+        refreshAllHostRowOptions();
+        select.value = result.name;
       } catch (err) {
         console.error(err);
         showToast('Failed to add host — check your connection', 'danger');
-        populateHostSelect('');
+        refreshHostRowOptions(row, hosts, '');
       }
     } else {
-      populateHostSelect('');
+      refreshHostRowOptions(row, hosts, '');
     }
   }
+
   recalculate();
-});
+}
+
+function refreshAllHostRowOptions() {
+  Array.from(hostRowsEl.children).forEach((row) => {
+    const current = row.querySelector('[name="hostName"]').value;
+    const preserved = current === ADD_HOST_OPTION_VALUE ? '' : current;
+    refreshHostRowOptions(row, hosts, preserved);
+  });
+}
+
+function updateHostCount() {
+  const count = hostRowsEl.children.length;
+  hostEmptyHint.hidden = count > 0;
+  hostCountLabel.textContent = `${count} host${count === 1 ? '' : 's'}`;
+}
+
+function getHostTeam() {
+  return Array.from(hostRowsEl.children)
+    .map((row) => {
+      const { name, role } = getHostRowData(row);
+      const host = hosts.find((h) => h.name === name);
+      return host ? { row, name: host.name, lifetimeTripCount: host.lifetimeTripCount, role } : null;
+    })
+    .filter(Boolean);
+}
 
 /** ---------- Participants ---------- */
 
@@ -174,22 +242,34 @@ function recalculate() {
   const participantCount = participantRowsEl.children.length;
   const packagePrice = Number(packagePriceInput.value) || 0;
   const otherIncome = Number(otherIncomeInput.value) || 0;
-  const selectedHost = getSelectedHost();
-  const hostTripCount = selectedHost ? selectedHost.lifetimeTripCount : 0;
-
-  hostTripCountDisplay.value = selectedHost ? String(selectedHost.lifetimeTripCount) : '—';
-
   const expenses = Array.from(expenseRowsEl.children).map((row) => getExpenseRowData(row));
+  const hostTeam = getHostTeam();
+  const tripType = tripTypeSelect.value;
 
-  const category = determineHostCategory(hostTripCount, calcSettings);
-  hostCategoryDisplay.value = CATEGORY_LABELS[category];
+  hostTeam.forEach(({ row, lifetimeTripCount }) => {
+    const category = determineHostCategory(lifetimeTripCount, calcSettings);
+    setHostRowTierDisplay(row, CATEGORY_LABELS[category]);
+  });
+
+  if (hostTeam.length === 0) {
+    summaryPanel.update({
+      income: 0, totalExpenses: 0, grossProfit: 0, tshirtFund: 0, adjustedProfit: 0,
+      hostCategory: '—', hostPayment: 0, hostBreakdown: [], tripType,
+      remaining: 0, socialMediaFund: 0, organizationProfit: 0,
+    }, formatBDT);
+    lastFinancials = null;
+    return;
+  }
 
   const result = calculateTripFinancials({
     participantCount,
     packagePrice,
     otherIncome,
     expenses,
-    hostLifetimeTripCount: hostTripCount,
+    tripType,
+    foreignHostBaseAmount: Number(foreignHostBaseInput.value) || 0,
+    foreignHostRatePerParticipant: Number(foreignHostRateInput.value) || 0,
+    hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
     settings: calcSettings,
   });
 
@@ -207,9 +287,11 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
   event.preventDefault();
 
   const form = event.target;
-  const selectedHost = getSelectedHost();
-  if (!form.checkValidity() || !selectedHost) {
-    if (!selectedHost) showToast('Please select a host', 'warning');
+  const hostTeam = getHostTeam();
+  const teamErrors = validateHostTeam(hostTeam);
+
+  if (!form.checkValidity() || teamErrors.length > 0) {
+    teamErrors.forEach((msg) => showToast(msg, 'warning'));
     form.reportValidity();
     return;
   }
@@ -222,8 +304,10 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
     tripName: document.getElementById('tripName').value.trim(),
     destination: document.getElementById('destination').value.trim(),
     tripDate: document.getElementById('tripDate').value,
-    hostName: selectedHost.name,
-    hostTripCount: selectedHost.lifetimeTripCount,
+    tripType: tripTypeSelect.value,
+    foreignHostBaseAmount: tripTypeSelect.value === 'foreign' ? (Number(foreignHostBaseInput.value) || 0) : null,
+    foreignHostRatePerParticipant: tripTypeSelect.value === 'foreign' ? (Number(foreignHostRateInput.value) || 0) : null,
+    hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
     packagePrice: Number(packagePriceInput.value) || 0,
     maxParticipants: Number(document.getElementById('maxParticipants').value) || null,
     otherIncome: Number(otherIncomeInput.value) || 0,
@@ -259,11 +343,33 @@ function populateFromPrefill(trip) {
   otherIncomeInput.value = trip.otherIncome ?? '';
   document.getElementById('notes').value = trip.notes || '';
 
-  const hostExists = hosts.some((h) => h.name === trip.hostName);
-  if (!hostExists && trip.hostName) {
-    hosts.push({ id: `host-prefill-${Date.now()}`, name: trip.hostName, lifetimeTripCount: trip.hostLifetimeTripCount || 0 });
-  }
-  populateHostSelect(trip.hostName || '');
+  tripTypeSelect.value = trip.tripType || 'domestic';
+  foreignHostBaseInput.value = trip.foreignHostBaseAmount ?? '';
+  foreignHostRateInput.value = trip.foreignHostRatePerParticipant ?? '';
+  updateTripTypeVisibility();
+
+  const tripHosts = trip.hosts && trip.hosts.length > 0
+    ? trip.hosts
+    : (trip.hostName ? [{ name: trip.hostName, lifetimeTripCount: trip.hostLifetimeTripCount || 0, role: 'lead' }] : []);
+
+  tripHosts.forEach((h) => {
+    const hostExists = hosts.some((existing) => existing.name === h.name);
+    if (!hostExists) {
+      hosts.push({ id: `host-prefill-${Date.now()}-${h.name}`, name: h.name, lifetimeTripCount: h.lifetimeTripCount || 0 });
+    }
+  });
+
+  tripHosts.forEach((h) => {
+    const row = createHostRow(hosts, {
+      defaultRole: h.role || 'coHost',
+      onChange: (row) => handleHostRowChange(row),
+      onRoleChange: recalculate,
+      onRemove: () => { updateHostCount(); recalculate(); },
+    });
+    hostRowsEl.appendChild(row);
+    refreshHostRowOptions(row, hosts, h.name);
+    setHostRowRole(row, h.role || 'coHost');
+  });
 
   (trip.participants || []).forEach((p) => {
     const row = createParticipantRow({ onChange: recalculate, onRemove: () => { updateEmptyHints(); recalculate(); } });
@@ -307,15 +413,15 @@ async function init() {
     showToast('Failed to load hosts/categories/settings — check your connection', 'danger');
   }
 
-  populateHostSelect('');
-
   if (prefill && prefill.trip) {
     populateFromPrefill(prefill.trip);
   } else {
+    addHostRow();
     addParticipantRow();
     addExpenseRow();
   }
 
+  updateHostCount();
   updateEmptyHints();
   recalculate();
 }

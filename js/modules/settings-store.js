@@ -27,11 +27,19 @@ export const DEFAULT_APP_SETTINGS = {
       maxTrips: CALC_DEFAULTS.hostTiers.intermediate.maxTrips,
       percent: CALC_DEFAULTS.hostTiers.intermediate.percent * 100,
       minimum: CALC_DEFAULTS.hostTiers.intermediate.minimum,
+      maximum: CALC_DEFAULTS.hostTiers.intermediate.maximum,
     },
     advanced: {
       percent: CALC_DEFAULTS.hostTiers.advanced.percent * 100,
       minimum: CALC_DEFAULTS.hostTiers.advanced.minimum,
+      maximum: CALC_DEFAULTS.hostTiers.advanced.maximum,
     },
+  },
+  // Multi-Host Role Weights — configurable, not hardcoded. Defaults match spec.
+  roleWeights: {
+    lead: CALC_DEFAULTS.roleWeights.lead,
+    coHost: CALC_DEFAULTS.roleWeights.coHost,
+    support: CALC_DEFAULTS.roleWeights.support,
   },
 };
 
@@ -65,6 +73,7 @@ export async function getSettings() {
       ...DEFAULT_APP_SETTINGS,
       ...fetched,
       hostTiers: { ...DEFAULT_APP_SETTINGS.hostTiers, ...(fetched.hostTiers || {}) },
+      roleWeights: { ...DEFAULT_APP_SETTINGS.roleWeights, ...(fetched.roleWeights || {}) },
     };
     writeCache(merged);
     return merged;
@@ -98,12 +107,19 @@ export async function getCalculationSettings() {
         type: 'percent',
         percent: s.hostTiers.intermediate.percent / 100,
         minimum: s.hostTiers.intermediate.minimum,
+        maximum: s.hostTiers.intermediate.maximum ?? null,
       },
       advanced: {
         type: 'percent',
         percent: s.hostTiers.advanced.percent / 100,
         minimum: s.hostTiers.advanced.minimum,
+        maximum: s.hostTiers.advanced.maximum ?? null,
       },
+    },
+    roleWeights: {
+      lead: s.roleWeights.lead,
+      coHost: s.roleWeights.coHost,
+      support: s.roleWeights.support,
     },
   };
 }

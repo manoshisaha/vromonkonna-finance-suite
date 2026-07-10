@@ -15,7 +15,7 @@
 import { initShell, showToast } from './app.js';
 import { fetchTrips, deleteTripRemote } from './modules/trips-store.js';
 import { getCalculationSettings } from './modules/settings-store.js';
-import { enrichTripWithFinancials, searchTrips, filterTrips, sortTrips, uniqueValues } from './modules/trip-utils.js';
+import { enrichTripWithFinancials, searchTrips, filterTrips, sortTrips, uniqueValues, uniqueHostNames } from './modules/trip-utils.js';
 import { formatBDT, formatNumber } from './utils/format.js';
 import { confirmDialog } from '../components/confirm-dialog.js';
 
@@ -54,7 +54,7 @@ async function loadTrips() {
 
 function populateFilterOptions() {
   const destinations = uniqueValues(trips, 'destination');
-  const hosts = uniqueValues(trips, 'hostName');
+  const hosts = uniqueHostNames(trips);
 
   destinations.forEach((d) => {
     const opt = document.createElement('option');
@@ -95,7 +95,7 @@ function renderRows() {
     <tr data-trip-id="${trip.id}">
       <td>${escapeHtml(trip.tripName)}</td>
       <td>${escapeHtml(trip.destination)}</td>
-      <td>${escapeHtml(trip.hostName)}</td>
+      <td>${escapeHtml(trip.hostDisplay)}</td>
       <td>${formatDate(trip.tripDate)}</td>
       <td>${formatNumber(trip.participantCount)}</td>
       <td><span class="badge ${statusBadgeClass(trip.status)}">${trip.status}</span></td>
@@ -240,6 +240,10 @@ function printTrip(trip) {
   }
 
   const expenseRows = trip.expenses.map((e) => `<tr><td>${escapeHtml(e.category)}</td><td>${formatBDT(e.amount)}</td></tr>`).join('');
+  const roleLabels = { lead: 'Lead', coHost: 'Co-host', support: 'Support' };
+  const hostRows = (trip.financials.hostBreakdown || []).map((h) =>
+    `<tr><td>${escapeHtml(h.name)}</td><td>${roleLabels[h.role] || h.role}</td><td>${formatBDT(h.amount)}</td></tr>`
+  ).join('');
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -260,15 +264,17 @@ function printTrip(trip) {
     </head>
     <body>
       <h1>${escapeHtml(trip.tripName)}</h1>
-      <p>${escapeHtml(trip.destination)} &middot; Hosted by ${escapeHtml(trip.hostName)} &middot; ${formatDate(trip.tripDate)}</p>
+      <p>${escapeHtml(trip.destination)} &middot; ${escapeHtml(trip.hostDisplay)} &middot; ${formatDate(trip.tripDate)} &middot; ${trip.tripType === 'foreign' ? 'Foreign trip' : 'Domestic trip'}</p>
       <div class="summary">
         <div><span>Income</span><strong>${formatBDT(trip.financials.income)}</strong></div>
         <div><span>Total expenses</span><strong>${formatBDT(trip.financials.totalExpenses)}</strong></div>
         <div><span>Gross profit</span><strong>${formatBDT(trip.financials.grossProfit)}</strong></div>
-        <div><span>Host payment</span><strong>${formatBDT(trip.financials.hostPayment)}</strong></div>
+        <div><span>Host budget</span><strong>${formatBDT(trip.financials.hostPayment)}</strong></div>
         <div><span>Social media fund</span><strong>${formatBDT(trip.financials.socialMediaFund)}</strong></div>
         <div><span>Organization profit</span><strong>${formatBDT(trip.financials.organizationProfit)}</strong></div>
       </div>
+      <h2>Hosts</h2>
+      <table><thead><tr><th>Name</th><th>Role</th><th>Amount</th></tr></thead><tbody>${hostRows}</tbody></table>
       <h2>Expenses</h2>
       <table><thead><tr><th>Category</th><th>Amount</th></tr></thead><tbody>${expenseRows}</tbody></table>
     </body>

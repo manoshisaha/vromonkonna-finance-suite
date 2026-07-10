@@ -59,8 +59,14 @@ async function loadForm() {
   document.getElementById('intermediateMaxTrips').value = s.hostTiers.intermediate.maxTrips;
   document.getElementById('intermediatePercent').value = s.hostTiers.intermediate.percent;
   document.getElementById('intermediateMinimum').value = s.hostTiers.intermediate.minimum;
+  document.getElementById('intermediateMaximum').value = s.hostTiers.intermediate.maximum ?? '';
   document.getElementById('advancedPercent').value = s.hostTiers.advanced.percent;
   document.getElementById('advancedMinimum').value = s.hostTiers.advanced.minimum;
+  document.getElementById('advancedMaximum').value = s.hostTiers.advanced.maximum ?? '';
+
+  document.getElementById('leadWeight').value = s.roleWeights.lead;
+  document.getElementById('coHostWeight').value = s.roleWeights.coHost;
+  document.getElementById('supportWeight').value = s.roleWeights.support;
 
   updateTierRangeLabels();
   await renderHostsTable();
@@ -302,11 +308,18 @@ form.addEventListener('submit', async (event) => {
         maxTrips: Number(document.getElementById('intermediateMaxTrips').value) || 0,
         percent: Number(document.getElementById('intermediatePercent').value) || 0,
         minimum: Number(document.getElementById('intermediateMinimum').value) || 0,
+        maximum: document.getElementById('intermediateMaximum').value === '' ? null : Number(document.getElementById('intermediateMaximum').value),
       },
       advanced: {
         percent: Number(document.getElementById('advancedPercent').value) || 0,
         minimum: Number(document.getElementById('advancedMinimum').value) || 0,
+        maximum: document.getElementById('advancedMaximum').value === '' ? null : Number(document.getElementById('advancedMaximum').value),
       },
+    },
+    roleWeights: {
+      lead: Number(document.getElementById('leadWeight').value) || 0,
+      coHost: Number(document.getElementById('coHostWeight').value) || 0,
+      support: Number(document.getElementById('supportWeight').value) || 0,
     },
   };
 

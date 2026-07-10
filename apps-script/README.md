@@ -35,7 +35,9 @@ your public deployment URL.
 1. In the script editor toolbar, select `setupSheets` from the function dropdown (next to the Run button).
 2. Click **Run**.
 3. The first time, Google will ask you to authorize the script — click through the consent screens (you'll see an "unverified app" warning since this is your own script; click **Advanced → Go to (project name)** to proceed).
-4. Check the spreadsheet — you should now see 7 tabs: `Trips`, `Participants`, `Expenses`, `Funds`, `Hosts`, `Settings`, `ExpenseCategories`, each with header rows, and `ExpenseCategories` pre-filled with the 12 built-in categories.
+4. Check the spreadsheet — you should now see 8 tabs: `Trips`, `TripHosts`, `Participants`, `Expenses`, `Funds`, `Hosts`, `Settings`, `ExpenseCategories`, each with header rows, and `ExpenseCategories` pre-filled with the 12 built-in categories.
+
+**If you already ran setup before multi-host support was added:** re-run `setupSheets` again — it's safe to re-run (it only creates sheets/columns that don't already exist yet, and won't touch or duplicate your existing trip data). This adds the new `TripHosts` tab and extends `Trips` with the new `TripType`/`HostBudget`/`LeadHostName`/`LeadHostTierSnapshot`/`ForeignHostBaseAmount`/`ForeignHostRatePerParticipant` columns. Trips saved before this change keep working — see the backward-compatibility note in `TripsApi.gs`.
 
 ## 5. Deploy as a Web App
 
@@ -77,7 +79,7 @@ All responses are JSON: `{ "success": true, "data": ... }` or `{ "success": fals
 
 | `action` | Body | Effect |
 |---|---|---|
-| `saveTrip` | `{ action, payload }` | Creates a trip (omit `payload.tripId`) or updates one (include it). `payload` matches New Trip's save payload, plus a `financials` object (the calculated results) so fund contributions can be recorded. Creating a trip also increments the host's lifetime trip count. |
+| `saveTrip` | `{ action, payload }` | Creates a trip (omit `payload.tripId`) or updates one (include it). `payload.hosts` is an array of `{ name, lifetimeTripCount, role }` (`role` is `'lead'`, `'coHost'`, or `'support'` — exactly one `'lead'` required), plus `payload.tripType` (`'domestic'` or `'foreign'`) and, for foreign trips, `payload.foreignHostBaseAmount` and `payload.foreignHostRatePerParticipant`. `payload.financials` (the client-calculated result, including `hostBreakdown`) is required so Host Budget and fund contributions can be recorded. Creating a trip increments every assigned host's lifetime trip count, not just the lead's. |
 | `deleteTrip` | `{ action, tripId }` | Deletes a trip and all its participants/expenses/fund contributions. |
 | `addHost` | `{ action, payload: { name, lifetimeTripCount } }` | Adds a host. |
 | `updateHost` | `{ action, hostId, updates }` | Updates a host's name/count. |

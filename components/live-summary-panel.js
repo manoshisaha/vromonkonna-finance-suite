@@ -2,14 +2,22 @@
  * components/live-summary-panel.js
  *
  * Collapsible top-of-page panel that displays live-calculated financial
- * results (income, expenses, gross profit, host payment, funds, org profit).
- * Used by New Trip, and reusable later by Trip History's edit view.
+ * results (income, expenses, gross profit, Host Budget, per-host split,
+ * funds, org profit). Used by New Trip, and reusable later by Trip
+ * History's edit view.
  */
 
 const CATEGORY_LABELS = {
   beginner: 'Beginner',
   intermediate: 'Intermediate',
   advanced: 'Advanced',
+  foreign: 'Foreign trip',
+};
+
+const ROLE_LABELS = {
+  lead: 'Lead',
+  coHost: 'Co-host',
+  support: 'Support',
 };
 
 /**
@@ -32,14 +40,15 @@ export function renderLiveSummaryPanel(targetEl) {
           ${metricHtml('grossProfit', 'Gross profit')}
           ${metricHtml('tshirtFund', 'T-shirt fund')}
           ${metricHtml('adjustedProfit', 'Adjusted profit')}
-          ${metricHtml('hostPayment', 'Host payment')}
+          ${metricHtml('hostPayment', 'Host budget')}
           ${metricHtml('socialMediaFund', 'Social media fund')}
           ${metricHtml('organizationProfit', 'Organization profit')}
         </div>
         <div class="live-summary__host-tier">
-          <span class="live-summary__host-label">Host category</span>
+          <span class="live-summary__host-label" data-field="hostCategoryLabel">Lead's tier</span>
           <span class="badge badge-info" data-field="hostCategory">—</span>
         </div>
+        <div class="live-summary__host-breakdown" data-field="hostBreakdown" hidden></div>
       </div>
     </div>
   `;
@@ -49,17 +58,50 @@ export function renderLiveSummaryPanel(targetEl) {
   return {
     update(result, formatFn = String) {
       Object.entries(result).forEach(([key, value]) => {
+        if (key === 'hostBreakdown') return;
         const el = targetEl.querySelector(`[data-field="${key}"]`);
         if (!el) return;
         el.textContent = key === 'hostCategory' ? (CATEGORY_LABELS[value] || value) : formatFn(value);
       });
 
+      const hostCategoryLabelEl = targetEl.querySelector('[data-field="hostCategoryLabel"]');
+      if (hostCategoryLabelEl) {
+        hostCategoryLabelEl.textContent = result.tripType === 'foreign' ? 'Trip type' : "Lead's tier";
+      }
+
       const orgProfitEl = targetEl.querySelector('[data-field="organizationProfit"]');
       if (orgProfitEl) {
         orgProfitEl.classList.toggle('live-summary__value--negative', result.organizationProfit < 0);
       }
+
+      const breakdownEl = targetEl.querySelector('[data-field="hostBreakdown"]');
+      if (breakdownEl) {
+        if (result.hostBreakdown && result.hostBreakdown.length > 0) {
+          breakdownEl.hidden = false;
+          breakdownEl.innerHTML = `
+            <span class="live-summary__host-label">Host budget split</span>
+            <div class="live-summary__host-breakdown-rows">
+              ${result.hostBreakdown.map((h) => `
+                <div class="live-summary__host-breakdown-row">
+                  <span>${escapeHtml(h.name)} <span class="badge badge-info">${ROLE_LABELS[h.role] || h.role}</span></span>
+                  <strong>${formatFn(h.amount)}</strong>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else {
+          breakdownEl.hidden = true;
+          breakdownEl.innerHTML = '';
+        }
+      }
     },
   };
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
 }
 
 function metricHtml(field, label) {

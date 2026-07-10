@@ -119,10 +119,34 @@ export function filterTripsByReport(trips, report) {
     case 'destination':
       return trips.filter((t) => t.destination === value);
     case 'host':
-      return trips.filter((t) => t.hostName === value);
+      return trips.filter((t) => (t.hostNames || []).includes(value));
     default:
       return trips;
   }
+}
+
+/**
+ * Sums a specific host's OWN calculated payments across a list of trips —
+ * NOT the whole trip's Host Budget, since other hosts on the same trip
+ * have their own separate shares. Each host is credited only for their
+ * own amount from `.financials.hostBreakdown`.
+ * @param {Object[]} trips - enriched trips (with `.financials.hostBreakdown`)
+ * @param {string} hostName
+ * @returns {{ totalEarned: number, tripCount: number }}
+ */
+export function calculateHostEarnings(trips, hostName) {
+  let totalEarned = 0;
+  let tripCount = 0;
+
+  trips.forEach((t) => {
+    const entry = (t.financials.hostBreakdown || []).find((h) => h.name === hostName);
+    if (entry) {
+      totalEarned += entry.amount;
+      tripCount += 1;
+    }
+  });
+
+  return { totalEarned, tripCount };
 }
 
 /**

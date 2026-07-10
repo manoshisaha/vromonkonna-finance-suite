@@ -13,9 +13,19 @@ function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   createSheetWithHeaders_(ss, 'Trips', [
-    'TripID', 'TripName', 'Destination', 'TripDate', 'HostName',
-    'HostLifetimeTripCountAtBooking', 'PackagePrice', 'MaxParticipants',
-    'OtherIncome', 'Status', 'Notes',
+    'TripID', 'TripName', 'Destination', 'TripDate', 'TripType',
+    'PackagePrice', 'MaxParticipants', 'OtherIncome', 'Status', 'Notes',
+    'HostBudget', 'LeadHostName', 'LeadHostTierSnapshot',
+    'ForeignHostBaseAmount', 'ForeignHostRatePerParticipant',
+    // Legacy columns kept for backward compatibility with trips saved before
+    // multi-host support existed — new saves leave these blank and use
+    // TripHosts instead. See TripsApi.gs's listTrips() fallback logic.
+    'HostName', 'HostLifetimeTripCountAtBooking',
+  ]);
+
+  createSheetWithHeaders_(ss, 'TripHosts', [
+    'TripHostID', 'TripID', 'HostName', 'Role', 'RoleWeightSnapshot',
+    'LifetimeTripCountSnapshot', 'Amount',
   ]);
 
   createSheetWithHeaders_(ss, 'Participants', [

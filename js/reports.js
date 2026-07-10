@@ -11,8 +11,8 @@
 import { initShell, showToast } from './app.js';
 import { fetchTrips } from './modules/trips-store.js';
 import { getCalculationSettings } from './modules/settings-store.js';
-import { enrichTripWithFinancials, uniqueValues } from './modules/trip-utils.js';
-import { filterTripsByReport, summarizeTrips, getAvailableYears, getCurrentMonthValue } from './modules/report-utils.js';
+import { enrichTripWithFinancials, uniqueValues, uniqueHostNames } from './modules/trip-utils.js';
+import { filterTripsByReport, summarizeTrips, calculateHostEarnings, getAvailableYears, getCurrentMonthValue } from './modules/report-utils.js';
 import { exportTripsCSV, exportTripsExcel, exportTripsPDF } from './modules/export-utils.js';
 import { renderStatCards } from '../components/stat-card.js';
 import { formatBDT, formatNumber } from './utils/format.js';
@@ -57,7 +57,7 @@ function renderValueControl() {
       </select>
     `;
   } else if (type === 'host') {
-    const hosts = uniqueValues(trips, 'hostName');
+    const hosts = uniqueHostNames(trips);
     reportValueField.innerHTML = `
       <label class="field__label" for="report-value">Host</label>
       <select class="field__control" id="report-value">
@@ -82,16 +82,27 @@ function getFilteredTrips() {
 
 function renderSummary(filtered) {
   const summary = summarizeTrips(filtered);
-  renderStatCards(summaryGrid, [
+  const cards = [
     { label: 'Total trips', value: formatNumber(summary.totalTrips), iconKey: 'trips', tint: 'accent' },
     { label: 'Income', value: formatBDT(summary.income), iconKey: 'revenue', tint: 'success' },
     { label: 'Expenses', value: formatBDT(summary.totalExpenses), iconKey: 'expense', tint: 'danger' },
     { label: 'Gross profit', value: formatBDT(summary.grossProfit), iconKey: 'profit', tint: 'info' },
     { label: 'T-shirt fund', value: formatBDT(summary.tshirtFund), iconKey: 'shirt', tint: 'warning' },
-    { label: 'Host payments', value: formatBDT(summary.hostPayment), iconKey: 'host', tint: 'success' },
+  ];
+
+  if (currentReport.type === 'host' && currentReport.value) {
+    const earnings = calculateHostEarnings(filtered, currentReport.value);
+    cards.push({ label: `${currentReport.value}'s earnings`, value: formatBDT(earnings.totalEarned), iconKey: 'host', tint: 'success' });
+  } else {
+    cards.push({ label: 'Host budget (total)', value: formatBDT(summary.hostPayment), iconKey: 'host', tint: 'success' });
+  }
+
+  cards.push(
     { label: 'Social media fund', value: formatBDT(summary.socialMediaFund), iconKey: 'megaphone', tint: 'info' },
     { label: 'Organization profit', value: formatBDT(summary.organizationProfit), iconKey: 'wallet', tint: 'accent' },
-  ]);
+  );
+
+  renderStatCards(summaryGrid, cards);
 }
 
 function statusBadgeClass(status) {
@@ -105,7 +116,7 @@ function renderTable(filtered) {
     <tr>
       <td>${escapeHtml(t.tripName)}</td>
       <td>${escapeHtml(t.destination)}</td>
-      <td>${escapeHtml(t.hostName)}</td>
+      <td>${escapeHtml(t.hostDisplay)}</td>
       <td>${formatDate(t.tripDate)}</td>
       <td>${formatNumber(t.participantCount)}</td>
       <td><span class="badge ${statusBadgeClass(t.status)}">${t.status}</span></td>
@@ -145,7 +156,7 @@ reportTypeSelect.addEventListener('change', () => {
   if (type === 'month') defaultValue = getCurrentMonthValue();
   else if (type === 'year') defaultValue = String(getAvailableYears(trips)[0] || '');
   else if (type === 'destination') defaultValue = uniqueValues(trips, 'destination')[0] || '';
-  else if (type === 'host') defaultValue = uniqueValues(trips, 'hostName')[0] || '';
+  else if (type === 'host') defaultValue = uniqueHostNames(trips)[0] || '';
 
   currentReport = { type, value: defaultValue };
   renderValueControl();

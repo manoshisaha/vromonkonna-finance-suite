@@ -9,12 +9,13 @@
 import { calculateTripFinancials } from './calculations.js';
 
 /**
- * Returns a new trip object with a `.financials` property attached,
- * computed via the shared calculation engine. `calcSettings` is fetched
- * once per page load (via settings-store.js's getCalculationSettings())
- * and passed in here, rather than re-fetched per trip — settings-store
- * now hits a real API, so resolving it once for a whole list avoids N
- * redundant network calls.
+ * Returns a new trip object with a `.financials` property attached
+ * (computed via the shared calculation engine, respecting the Lead
+ * Host's tier / foreign per-participant rate / role-weight split), plus
+ * a convenience `.hostNames` array and `.hostDisplay` string for search/
+ * filter/table display. `calcSettings` is fetched once per page load
+ * (via settings-store.js's getCalculationSettings()) and passed in here
+ * rather than re-fetched per trip.
  * @param {Object} trip
  * @param {Object} calcSettings - result of getCalculationSettings()
  * @returns {Object}
@@ -26,15 +27,29 @@ export function enrichTripWithFinancials(trip, calcSettings) {
     packagePrice: trip.packagePrice,
     otherIncome: trip.otherIncome,
     expenses: trip.expenses,
-    hostLifetimeTripCount: trip.hostLifetimeTripCount,
+    tripType: trip.tripType,
+    foreignHostBaseAmount: trip.foreignHostBaseAmount,
+    foreignHostRatePerParticipant: trip.foreignHostRatePerParticipant,
+    hosts: trip.hosts,
     settings: calcSettings,
   });
 
-  return { ...trip, participantCount, financials };
+  const hostNames = (trip.hosts || []).map((h) => h.name);
+  const leadHost = (trip.hosts || []).find((h) => h.role === 'lead');
+
+  return {
+    ...trip,
+    participantCount,
+    financials,
+    hostNames,
+    hostDisplay: hostNames.length > 1
+      ? `${leadHost ? leadHost.name : hostNames[0]} +${hostNames.length - 1} more`
+      : (hostNames[0] || '—'),
+  };
 }
 
 /**
- * Text search across trip name, destination, and host name (case-insensitive).
+ * Text search across trip name, destination, and every assigned host's name.
  * @param {Object[]} trips - trips already enriched with financials
  * @param {string} query
  */
@@ -44,12 +59,13 @@ export function searchTrips(trips, query) {
   return trips.filter((t) =>
     t.tripName.toLowerCase().includes(q) ||
     t.destination.toLowerCase().includes(q) ||
-    t.hostName.toLowerCase().includes(q)
+    (t.hostNames || []).some((name) => name.toLowerCase().includes(q))
   );
 }
 
 /**
  * Filters by exact-match fields. Any filter value of '' or 'all' is ignored.
+ * `hostName` matches if ANY host on the trip (any role) has that name.
  * @param {Object[]} trips
  * @param {{ status?: string, destination?: string, hostName?: string }} filters
  */
@@ -57,7 +73,7 @@ export function filterTrips(trips, filters = {}) {
   return trips.filter((t) => {
     if (filters.status && filters.status !== 'all' && t.status !== filters.status) return false;
     if (filters.destination && filters.destination !== 'all' && t.destination !== filters.destination) return false;
-    if (filters.hostName && filters.hostName !== 'all' && t.hostName !== filters.hostName) return false;
+    if (filters.hostName && filters.hostName !== 'all' && !(t.hostNames || []).includes(filters.hostName)) return false;
     return true;
   });
 }
@@ -85,6 +101,12 @@ export function sortTrips(trips, sortKey, direction = 'asc') {
 /** Returns the sorted list of unique values for a given top-level field, for filter dropdowns. */
 export function uniqueValues(trips, field) {
   return [...new Set(trips.map((t) => t[field]))].sort();
+}
+
+/** Returns the sorted list of unique individual host names across every trip and role — for the host filter dropdown. */
+export function uniqueHostNames(trips) {
+  const all = trips.flatMap((t) => t.hostNames || []);
+  return [...new Set(all)].sort();
 }
 
 function getByPath(obj, path) {

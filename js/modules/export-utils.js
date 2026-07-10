@@ -35,7 +35,7 @@ export function exportTripsCSV(trips, filename = 'vromonkonna-report.csv') {
   ];
 
   const rows = trips.map((t) => [
-    t.tripName, t.destination, t.hostName, t.tripDate, t.status, t.participantCount,
+    t.tripName, t.destination, t.hostDisplay, t.tripDate, t.status, t.participantCount,
     t.financials.income, t.financials.totalExpenses, t.financials.grossProfit,
     t.financials.tshirtFund, t.financials.hostPayment, t.financials.socialMediaFund,
     t.financials.organizationProfit,
@@ -71,7 +71,7 @@ export function exportTripsExcel(trips, filename = 'vromonkonna-report.xlsx') {
   const rows = trips.map((t) => ({
     'Trip Name': t.tripName,
     'Destination': t.destination,
-    'Host': t.hostName,
+    'Host': t.hostDisplay,
     'Date': t.tripDate,
     'Status': t.status,
     'Participants': t.participantCount,

@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="../css/new-trip.css" />
   <link rel="stylesheet" href="../css/settings.css" />
 
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.47.0/iconfont/tabler-icons.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css" />
 </head>
 <body>
   <div class="app-shell" data-sidebar-open="false">
@@ -107,7 +107,7 @@
               <div class="settings-section__hint">These feed directly into the calculation engine used on Dashboard, New Trip, Trip History, Reports, and Funds.</div>
               <table class="host-tier-table">
                 <thead>
-                  <tr><th>Tier</th><th>Trip range</th><th>Payment</th><th>Minimum</th></tr>
+                  <tr><th>Tier</th><th>Trip range</th><th>Payment</th><th>Minimum</th><th>Maximum</th></tr>
                 </thead>
                 <tbody>
                   <tr>
@@ -115,21 +115,46 @@
                     <td>0 – <input type="number" id="beginnerMaxTrips" min="0" /></td>
                     <td>Fixed <input type="number" id="beginnerAmount" min="0" /></td>
                     <td>—</td>
+                    <td>—</td>
                   </tr>
                   <tr>
                     <td>Intermediate</td>
                     <td><span id="intermediateMinTripsLabel"></span> – <input type="number" id="intermediateMaxTrips" min="0" /></td>
                     <td><input type="number" id="intermediatePercent" min="0" max="100" /> %</td>
                     <td><input type="number" id="intermediateMinimum" min="0" /></td>
+                    <td><input type="number" id="intermediateMaximum" min="0" placeholder="No cap" /></td>
                   </tr>
                   <tr>
                     <td>Advanced</td>
                     <td><span id="advancedMinTripsLabel"></span>+</td>
                     <td><input type="number" id="advancedPercent" min="0" max="100" /> %</td>
                     <td><input type="number" id="advancedMinimum" min="0" /></td>
+                    <td><input type="number" id="advancedMaximum" min="0" placeholder="No cap" /></td>
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </section>
+
+          <!-- Multi-Host Role Weights -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">Multi-host role weights</div>
+              <div class="settings-section__hint">When a trip has more than one host, the Host Budget (set by the Lead Host's tier) is split between them proportional to these weights. Changing these does not change the total Host Budget — only how it's divided.</div>
+              <div class="field-grid">
+                <div class="field">
+                  <label class="field__label" for="leadWeight">Lead host weight</label>
+                  <input class="field__control" type="number" id="leadWeight" min="0" step="1" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="coHostWeight">Co-host weight</label>
+                  <input class="field__control" type="number" id="coHostWeight" min="0" step="1" />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="supportWeight">Support host weight</label>
+                  <input class="field__control" type="number" id="supportWeight" min="0" step="1" />
+                </div>
+              </div>
             </div>
           </section>
 

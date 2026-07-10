@@ -360,4 +360,20 @@ export const MOCK_TRIPS = [
     ]),
     notes: '',
   },
-];
+].map(toMultiHostShape);
+
+/**
+ * Converts a legacy single `hostName`/`hostLifetimeTripCount` trip entry
+ * into the current multi-host shape (`hosts: [{ name, lifetimeTripCount,
+ * role: 'lead' }]`, `tripType: 'domestic'`), so this bundled dataset
+ * matches exactly what the real API returns. The single-host fields
+ * above are just a compact way to author these 16 entries by hand.
+ */
+function toMultiHostShape(trip) {
+  const { hostName, hostLifetimeTripCount, ...rest } = trip;
+  return {
+    ...rest,
+    tripType: 'domestic',
+    hosts: [{ name: hostName, lifetimeTripCount: hostLifetimeTripCount, role: 'lead' }],
+  };
+}
