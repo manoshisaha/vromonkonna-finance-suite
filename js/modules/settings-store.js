@@ -41,6 +41,13 @@ export const DEFAULT_APP_SETTINGS = {
     coHost: CALC_DEFAULTS.roleWeights.coHost,
     support: CALC_DEFAULTS.roleWeights.support,
   },
+  // Foreign trip fee defaults — pre-fill New Trip's foreign fee fields so
+  // staff aren't retyping the usual numbers every time, but each trip can
+  // still override them (these amounts genuinely vary trip to trip).
+  foreignTripDefaults: {
+    baseAmount: 0,
+    ratePerParticipant: 0,
+  },
 };
 
 function readCache() {
@@ -74,6 +81,7 @@ export async function getSettings() {
       ...fetched,
       hostTiers: { ...DEFAULT_APP_SETTINGS.hostTiers, ...(fetched.hostTiers || {}) },
       roleWeights: { ...DEFAULT_APP_SETTINGS.roleWeights, ...(fetched.roleWeights || {}) },
+      foreignTripDefaults: { ...DEFAULT_APP_SETTINGS.foreignTripDefaults, ...(fetched.foreignTripDefaults || {}) },
     };
     writeCache(merged);
     return merged;
@@ -120,6 +128,10 @@ export async function getCalculationSettings() {
       lead: s.roleWeights.lead,
       coHost: s.roleWeights.coHost,
       support: s.roleWeights.support,
+    },
+    foreignTripDefaults: {
+      baseAmount: s.foreignTripDefaults.baseAmount,
+      ratePerParticipant: s.foreignTripDefaults.ratePerParticipant,
     },
   };
 }

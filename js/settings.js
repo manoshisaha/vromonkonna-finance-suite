@@ -54,6 +54,9 @@ async function loadForm() {
   document.getElementById('tshirtPrice').value = s.tshirtPrice;
   document.getElementById('socialMediaFundPercent').value = s.socialMediaFundPercent;
 
+  document.getElementById('defaultForeignBase').value = s.foreignTripDefaults.baseAmount;
+  document.getElementById('defaultForeignRate').value = s.foreignTripDefaults.ratePerParticipant;
+
   document.getElementById('beginnerMaxTrips').value = s.hostTiers.beginner.maxTrips;
   document.getElementById('beginnerAmount').value = s.hostTiers.beginner.amount;
   document.getElementById('intermediateMaxTrips').value = s.hostTiers.intermediate.maxTrips;
@@ -299,6 +302,10 @@ form.addEventListener('submit', async (event) => {
     fiscalYearStartMonth: Number(document.getElementById('fiscalYearStartMonth').value),
     tshirtPrice: Number(document.getElementById('tshirtPrice').value) || 0,
     socialMediaFundPercent: Number(document.getElementById('socialMediaFundPercent').value) || 0,
+    foreignTripDefaults: {
+      baseAmount: Number(document.getElementById('defaultForeignBase').value) || 0,
+      ratePerParticipant: Number(document.getElementById('defaultForeignRate').value) || 0,
+    },
     hostTiers: {
       beginner: {
         maxTrips: Number(document.getElementById('beginnerMaxTrips').value) || 0,

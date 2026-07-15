@@ -3,8 +3,9 @@
  *
  * Settings resource: a simple Key/Value sheet (one row per setting)
  * rather than a single wide row, so adding a new setting later is just
- * a new row, not a schema change. hostTiers and roleWeights are nested
- * objects, each stored as a JSON string in their own row.
+ * a new row, not a schema change. hostTiers, roleWeights, and
+ * foreignTripDefaults are nested objects, each stored as a JSON string
+ * in their own row.
  *
  * Shape matches js/modules/settings-store.js's getSettings()/saveSettings()
  * exactly, so the frontend swap is a drop-in replacement.
@@ -19,6 +20,7 @@ const DEFAULT_HOST_TIERS_ = {
 };
 
 const DEFAULT_ROLE_WEIGHTS_ = { lead: 5, coHost: 3, support: 2 };
+const DEFAULT_FOREIGN_TRIP_DEFAULTS_ = { baseAmount: 0, ratePerParticipant: 0 };
 
 function getSettings() {
   const rows = sheetToObjects_(getSheet_(SETTINGS_SHEET));
@@ -37,6 +39,7 @@ function getSettings() {
     socialMediaFundPercent: Number(map.socialMediaFundPercent) || 10,
     hostTiers: map.hostTiers ? JSON.parse(map.hostTiers) : DEFAULT_HOST_TIERS_,
     roleWeights: map.roleWeights ? JSON.parse(map.roleWeights) : DEFAULT_ROLE_WEIGHTS_,
+    foreignTripDefaults: map.foreignTripDefaults ? JSON.parse(map.foreignTripDefaults) : DEFAULT_FOREIGN_TRIP_DEFAULTS_,
   };
 }
 
@@ -55,6 +58,7 @@ function saveSettings(payload) {
     socialMediaFundPercent: payload.socialMediaFundPercent,
     hostTiers: JSON.stringify(payload.hostTiers),
     roleWeights: JSON.stringify(payload.roleWeights || DEFAULT_ROLE_WEIGHTS_),
+    foreignTripDefaults: JSON.stringify(payload.foreignTripDefaults || DEFAULT_FOREIGN_TRIP_DEFAULTS_),
   };
 
   Object.keys(entries).forEach((key) => setSettingValue_(sheet, key, entries[key]));

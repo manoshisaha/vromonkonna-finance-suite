@@ -105,6 +105,18 @@ let phoneDirectory = [];
 function updateTripTypeVisibility() {
   const isForeign = tripTypeSelect.value === 'foreign';
   foreignFeeFields.hidden = !isForeign;
+
+  // Pre-fill from Settings defaults when switching to Foreign, but only if
+  // the fields are still empty — never override a value already entered
+  // for this specific trip.
+  if (isForeign && calcSettings && calcSettings.foreignTripDefaults) {
+    if (!foreignHostBaseInput.value) {
+      foreignHostBaseInput.value = calcSettings.foreignTripDefaults.baseAmount || '';
+    }
+    if (!foreignHostRateInput.value) {
+      foreignHostRateInput.value = calcSettings.foreignTripDefaults.ratePerParticipant || '';
+    }
+  }
 }
 
 tripTypeSelect.addEventListener('change', () => {

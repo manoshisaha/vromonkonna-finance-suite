@@ -99,6 +99,24 @@
             </div>
           </section>
 
+          <!-- Foreign trip defaults -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">Foreign trip defaults</div>
+              <div class="settings-section__hint">Pre-fills New Trip's foreign-trip fee fields so you're not retyping the usual numbers — each trip can still override these, since the amounts genuinely vary trip to trip.</div>
+              <div class="settings-two-col">
+                <div class="field" style="margin-bottom: 0;">
+                  <label class="field__label" for="defaultForeignBase">Default fixed base amount</label>
+                  <input class="field__control" type="number" id="defaultForeignBase" min="0" step="1" placeholder="e.g. 20000" />
+                </div>
+                <div class="field" style="margin-bottom: 0;">
+                  <label class="field__label" for="defaultForeignRate">Default fee per participant</label>
+                  <input class="field__control" type="number" id="defaultForeignRate" min="0" step="1" placeholder="e.g. 1500" />
+                </div>
+              </div>
+            </div>
+          </section>
+
           <!-- Host payment tiers -->
           <section class="settings-section">
             <div class="panel">
