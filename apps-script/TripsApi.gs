@@ -60,6 +60,7 @@ function listTrips() {
       leadHostTierSnapshot: trip.LeadHostTierSnapshot,
       foreignHostBaseAmount: trip.ForeignHostBaseAmount,
       foreignHostRatePerParticipant: trip.ForeignHostRatePerParticipant,
+      financialsSnapshot: buildFinancialsSnapshot_(trip),
       hosts: hosts,
       participants: participants
         .filter((p) => p.TripID === trip.TripID)
@@ -76,6 +77,24 @@ function listTrips() {
         .map((x) => ({ category: x.Category, amount: x.Amount, note: x.Note })),
     };
   });
+}
+
+/**
+ * Builds the frozen settings-dependent financial snapshot for a trip, or
+ * null if this trip predates snapshotting (so the frontend falls back to
+ * a live recompute for it). Income/Expenses/GrossProfit aren't part of
+ * this — see the column comment in SetupSheets.gs for why.
+ */
+function buildFinancialsSnapshot_(trip) {
+  if (trip.TshirtFundSnapshot === '' || trip.TshirtFundSnapshot == null) return null;
+
+  return {
+    tshirtFund: trip.TshirtFundSnapshot,
+    adjustedProfit: trip.AdjustedProfitSnapshot,
+    remaining: trip.RemainingSnapshot,
+    socialMediaFund: trip.SocialMediaFundSnapshot,
+    organizationProfit: trip.OrganizationProfitSnapshot,
+  };
 }
 
 /**
@@ -130,6 +149,11 @@ function saveTrip(payload) {
     LeadHostTierSnapshot: financials.hostCategory || '',
     ForeignHostBaseAmount: payload.tripType === 'foreign' ? (payload.foreignHostBaseAmount || 0) : '',
     ForeignHostRatePerParticipant: payload.tripType === 'foreign' ? (payload.foreignHostRatePerParticipant || 0) : '',
+    TshirtFundSnapshot: financials.tshirtFund != null ? financials.tshirtFund : '',
+    AdjustedProfitSnapshot: financials.adjustedProfit != null ? financials.adjustedProfit : '',
+    RemainingSnapshot: financials.remaining != null ? financials.remaining : '',
+    SocialMediaFundSnapshot: financials.socialMediaFund != null ? financials.socialMediaFund : '',
+    OrganizationProfitSnapshot: financials.organizationProfit != null ? financials.organizationProfit : '',
     // Legacy columns left blank on new/updated saves — TripHosts is now
     // the source of truth for host data. Kept only so old rows (and the
     // sheet's column structure) aren't disrupted.

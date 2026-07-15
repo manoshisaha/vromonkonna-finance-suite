@@ -17,6 +17,16 @@ function setupSheets() {
     'PackagePrice', 'MaxParticipants', 'OtherIncome', 'Status', 'Notes',
     'HostBudget', 'LeadHostName', 'LeadHostTierSnapshot',
     'ForeignHostBaseAmount', 'ForeignHostRatePerParticipant',
+    // Snapshot of every settings-dependent result, frozen at the moment
+    // the trip is saved. Income/Expenses/GrossProfit aren't included here
+    // because they only depend on the trip's own numbers (participants,
+    // package price, expenses) — never on Settings — so they're always
+    // safe to recompute fresh. These five ARE settings-dependent (T-shirt
+    // price, host tiers, Social Fund %), so without freezing them, editing
+    // Settings later would silently change how old trips display. See
+    // trip-utils.js's enrichTripWithFinancials() for how this is used.
+    'TshirtFundSnapshot', 'AdjustedProfitSnapshot', 'RemainingSnapshot',
+    'SocialMediaFundSnapshot', 'OrganizationProfitSnapshot',
     // Legacy columns kept for backward compatibility with trips saved before
     // multi-host support existed — new saves leave these blank and use
     // TripHosts instead. See TripsApi.gs's listTrips() fallback logic.

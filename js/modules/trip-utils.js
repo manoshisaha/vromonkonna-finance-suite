@@ -6,33 +6,54 @@
  * No DOM access — reusable by Trip History, Reports, and Dashboard alike.
  */
 
-import { calculateTripFinancials } from './calculations.js';
+import { calculateTripFinancials, calculateIncome, calculateExpenseTotal } from './calculations.js';
 
 /**
- * Returns a new trip object with a `.financials` property attached
- * (computed via the shared calculation engine, respecting the Lead
- * Host's tier / foreign per-participant rate / role-weight split), plus
+ * Returns a new trip object with a `.financials` property attached, plus
  * a convenience `.hostNames` array and `.hostDisplay` string for search/
- * filter/table display. `calcSettings` is fetched once per page load
- * (via settings-store.js's getCalculationSettings()) and passed in here
- * rather than re-fetched per trip.
+ * filter/table display.
+ *
+ * IMPORTANT — historical accuracy: if the trip carries a
+ * `financialsSnapshot` (written by the backend at save time — see
+ * TripsApi.gs), that frozen snapshot is used for every settings-dependent
+ * figure (T-shirt fund, adjusted profit, remaining, social fund, org
+ * profit, host budget/breakdown) instead of recomputing them with
+ * *today's* Settings. Otherwise editing Settings months later would
+ * silently rewrite how old, already-completed trips display everywhere
+ * (Trip History, Reports, Dashboard) — see the design note in
+ * TripsApi.gs's buildFinancialsSnapshot_() for the full reasoning.
+ *
+ * Income/Expenses/Gross Profit are always computed fresh regardless,
+ * since they depend only on the trip's own numbers (participants,
+ * package price, expenses) and never on Settings — so recomputing them
+ * is always safe and never goes stale.
+ *
+ * Trips saved before snapshotting existed (no `financialsSnapshot`) fall
+ * back to a full live calculation, same as before — this only changes
+ * behavior for trips saved after this feature shipped.
+ *
+ * `calcSettings` is fetched once per page load (via settings-store.js's
+ * getCalculationSettings()) and passed in here rather than re-fetched
+ * per trip; it's only actually used for the legacy-fallback path.
  * @param {Object} trip
  * @param {Object} calcSettings - result of getCalculationSettings()
  * @returns {Object}
  */
 export function enrichTripWithFinancials(trip, calcSettings) {
   const participantCount = trip.participants.length;
-  const financials = calculateTripFinancials({
-    participantCount,
-    packagePrice: trip.packagePrice,
-    otherIncome: trip.otherIncome,
-    expenses: trip.expenses,
-    tripType: trip.tripType,
-    foreignHostBaseAmount: trip.foreignHostBaseAmount,
-    foreignHostRatePerParticipant: trip.foreignHostRatePerParticipant,
-    hosts: trip.hosts,
-    settings: calcSettings,
-  });
+  const financials = trip.financialsSnapshot
+    ? buildFinancialsFromSnapshot(trip, participantCount)
+    : calculateTripFinancials({
+        participantCount,
+        packagePrice: trip.packagePrice,
+        otherIncome: trip.otherIncome,
+        expenses: trip.expenses,
+        tripType: trip.tripType,
+        foreignHostBaseAmount: trip.foreignHostBaseAmount,
+        foreignHostRatePerParticipant: trip.foreignHostRatePerParticipant,
+        hosts: trip.hosts,
+        settings: calcSettings,
+      });
 
   const hostNames = (trip.hosts || []).map((h) => h.name);
   const leadHost = (trip.hosts || []).find((h) => h.role === 'lead');
@@ -45,6 +66,33 @@ export function enrichTripWithFinancials(trip, calcSettings) {
     hostDisplay: hostNames.length > 1
       ? `${leadHost ? leadHost.name : hostNames[0]} +${hostNames.length - 1} more`
       : (hostNames[0] || '—'),
+  };
+}
+
+/**
+ * Assembles a full TripFinancialsResult from a trip's frozen snapshot,
+ * recomputing only the settings-independent Income/Expenses/Gross Profit
+ * fresh. See enrichTripWithFinancials()'s doc comment for why.
+ */
+function buildFinancialsFromSnapshot(trip, participantCount) {
+  const income = calculateIncome(participantCount, trip.packagePrice, trip.otherIncome);
+  const totalExpenses = calculateExpenseTotal(trip.expenses);
+  const grossProfit = income - totalExpenses;
+  const snap = trip.financialsSnapshot;
+
+  return {
+    income,
+    totalExpenses,
+    grossProfit,
+    tshirtFund: snap.tshirtFund,
+    adjustedProfit: snap.adjustedProfit,
+    hostCategory: trip.leadHostTierSnapshot,
+    hostPayment: trip.hostBudget,
+    hostBreakdown: (trip.hosts || []).map((h) => ({ name: h.name, role: h.role, amount: h.amount })),
+    tripType: trip.tripType,
+    remaining: snap.remaining,
+    socialMediaFund: snap.socialMediaFund,
+    organizationProfit: snap.organizationProfit,
   };
 }
 

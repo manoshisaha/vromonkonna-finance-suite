@@ -86,9 +86,6 @@ const otherIncomeInput = document.getElementById('otherIncome');
 const saveTripBtn = document.getElementById('save-trip-btn');
 
 const tripTypeSelect = document.getElementById('tripType');
-const foreignFeeFields = document.getElementById('foreignFeeFields');
-const foreignHostBaseInput = document.getElementById('foreignHostBase');
-const foreignHostRateInput = document.getElementById('foreignHostRate');
 
 const CATEGORY_LABELS = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
 
@@ -102,30 +99,7 @@ let phoneDirectory = [];
 
 /** ---------- Trip type (domestic / foreign) ---------- */
 
-function updateTripTypeVisibility() {
-  const isForeign = tripTypeSelect.value === 'foreign';
-  foreignFeeFields.hidden = !isForeign;
-
-  // Pre-fill from Settings defaults when switching to Foreign, but only if
-  // the fields are still empty — never override a value already entered
-  // for this specific trip.
-  if (isForeign && calcSettings && calcSettings.foreignTripDefaults) {
-    if (!foreignHostBaseInput.value) {
-      foreignHostBaseInput.value = calcSettings.foreignTripDefaults.baseAmount || '';
-    }
-    if (!foreignHostRateInput.value) {
-      foreignHostRateInput.value = calcSettings.foreignTripDefaults.ratePerParticipant || '';
-    }
-  }
-}
-
-tripTypeSelect.addEventListener('change', () => {
-  updateTripTypeVisibility();
-  recalculate();
-});
-foreignHostBaseInput.addEventListener('input', recalculate);
-foreignHostRateInput.addEventListener('input', recalculate);
-updateTripTypeVisibility();
+tripTypeSelect.addEventListener('change', recalculate);
 
 /** ---------- Hosts ---------- */
 
@@ -283,8 +257,8 @@ function recalculate() {
     otherIncome,
     expenses,
     tripType,
-    foreignHostBaseAmount: Number(foreignHostBaseInput.value) || 0,
-    foreignHostRatePerParticipant: Number(foreignHostRateInput.value) || 0,
+    foreignHostBaseAmount: calcSettings?.foreignTripDefaults?.baseAmount || 0,
+    foreignHostRatePerParticipant: calcSettings?.foreignTripDefaults?.ratePerParticipant || 0,
     hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
     settings: calcSettings,
   });
@@ -357,8 +331,8 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
     destination: document.getElementById('destination').value.trim(),
     tripDate: document.getElementById('tripDate').value,
     tripType: tripTypeSelect.value,
-    foreignHostBaseAmount: tripTypeSelect.value === 'foreign' ? (Number(foreignHostBaseInput.value) || 0) : null,
-    foreignHostRatePerParticipant: tripTypeSelect.value === 'foreign' ? (Number(foreignHostRateInput.value) || 0) : null,
+    foreignHostBaseAmount: tripTypeSelect.value === 'foreign' ? (calcSettings?.foreignTripDefaults?.baseAmount || 0) : null,
+    foreignHostRatePerParticipant: tripTypeSelect.value === 'foreign' ? (calcSettings?.foreignTripDefaults?.ratePerParticipant || 0) : null,
     hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
     packagePrice: Number(packagePriceInput.value) || 0,
     otherIncome: Number(otherIncomeInput.value) || 0,
@@ -394,9 +368,6 @@ function populateFromPrefill(trip) {
   document.getElementById('notes').value = trip.notes || '';
 
   tripTypeSelect.value = trip.tripType || 'domestic';
-  foreignHostBaseInput.value = trip.foreignHostBaseAmount ?? '';
-  foreignHostRateInput.value = trip.foreignHostRatePerParticipant ?? '';
-  updateTripTypeVisibility();
 
   const tripHosts = trip.hosts && trip.hosts.length > 0
     ? trip.hosts

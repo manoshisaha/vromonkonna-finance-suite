@@ -58,7 +58,7 @@
                     <option value="domestic">Domestic</option>
                     <option value="foreign">Foreign</option>
                   </select>
-                  <span class="field-hint">Foreign trips use a fixed fee set in the Hosts section below, instead of the tier system.</span>
+                  <span class="field-hint">Foreign trips use the fixed fee set in Settings → Foreign trip defaults, instead of the tier system.</span>
                 </div>
                 <div class="field">
                   <label class="field__label" for="packagePrice">Package price (per person)</label>
@@ -88,17 +88,6 @@
               <span class="form-section__count" id="host-count-label">0 hosts</span>
             </div>
             <div class="panel">
-              <div class="field-grid" id="foreignFeeFields" hidden style="margin-bottom: var(--space-4);">
-                <div class="field" style="margin-bottom: 0;">
-                  <label class="field__label" for="foreignHostBase">Fixed base amount</label>
-                  <input class="field__control" type="number" id="foreignHostBase" name="foreignHostBase" min="0" step="1" placeholder="e.g. 20000" />
-                </div>
-                <div class="field" style="margin-bottom: 0;">
-                  <label class="field__label" for="foreignHostRate">Fee per participant</label>
-                  <input class="field__control" type="number" id="foreignHostRate" name="foreignHostRate" min="0" step="1" placeholder="e.g. 1500" />
-                  <span class="field-hint">Host Budget = base amount + (this rate × participants). Leave either at 0 to use only one component.</span>
-                </div>
-              </div>
               <div class="dynamic-row-list" id="host-rows"></div>
               <div class="host-tier-warning" id="host-tier-warning" hidden></div>
               <div class="empty-row-hint" id="host-empty-hint">No hosts added yet — add at least one.</div>
@@ -106,7 +95,7 @@
                 <i class="ti ti-plus" aria-hidden="true"></i> Add host
               </button>
               <p class="field-hint" style="margin-top: var(--space-3);">
-                Every trip needs exactly one Lead Host. On domestic trips, the Lead's tier sets the Host Budget (Co-hosts and Support Hosts don't affect it). On foreign trips, the Host Budget comes from the fee fields above instead. The budget is then split between all hosts by role weight — see the live summary below.
+                Every trip needs exactly one Lead Host. On domestic trips, the Lead's tier sets the Host Budget (Co-hosts and Support Hosts don't affect it). On foreign trips, the Host Budget comes from the fee set in Settings instead. The budget is then split between all hosts by role weight — see the live summary below.
               </p>
             </div>
           </section>
