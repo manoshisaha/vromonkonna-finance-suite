@@ -8,6 +8,7 @@
  */
 
 const PAYMENT_STATUSES = ['Paid', 'Partial', 'Due'];
+const PAYMENT_MODES = ['Bkash', 'Bank', 'Cash', 'Other'];
 
 let rowIdCounter = 0;
 
@@ -42,8 +43,10 @@ export function createParticipantRow(handlers = {}) {
         <input class="field__control" type="number" name="dueAmount" min="0" step="1" placeholder="0" />
       </div>
       <div class="field field--compact">
-        <label class="field__label">Pickup point</label>
-        <input class="field__control" type="text" name="pickupPoint" placeholder="e.g. Farmgate" />
+        <label class="field__label">Payment mode</label>
+        <select class="field__control" name="paymentMode">
+          ${PAYMENT_MODES.map((m) => `<option value="${m}">${m}</option>`).join('')}
+        </select>
       </div>
       <div class="field field--compact">
         <label class="field__label">Payment status</label>
@@ -73,7 +76,7 @@ export function createParticipantRow(handlers = {}) {
 /**
  * Reads current field values out of a participant row element.
  * @param {HTMLElement} rowEl
- * @returns {{ name: string, phone: string, paidAmount: number, dueAmount: number, pickupPoint: string, paymentStatus: string }}
+ * @returns {{ name: string, phone: string, paidAmount: number, dueAmount: number, paymentMode: string, paymentStatus: string }}
  */
 export function getParticipantRowData(rowEl) {
   return {
@@ -81,7 +84,7 @@ export function getParticipantRowData(rowEl) {
     phone: rowEl.querySelector('[name="phone"]').value.trim(),
     paidAmount: Number(rowEl.querySelector('[name="paidAmount"]').value) || 0,
     dueAmount: Number(rowEl.querySelector('[name="dueAmount"]').value) || 0,
-    pickupPoint: rowEl.querySelector('[name="pickupPoint"]').value.trim(),
+    paymentMode: rowEl.querySelector('[name="paymentMode"]').value,
     paymentStatus: rowEl.querySelector('[name="paymentStatus"]').value,
   };
 }

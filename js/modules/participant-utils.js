@@ -69,7 +69,7 @@ export function buildParticipantDirectory(trips) {
         name: p.name,
         paidAmount: p.paidAmount,
         dueAmount: p.dueAmount,
-        pickupPoint: p.pickupPoint,
+        paymentMode: p.paymentMode,
         paymentStatus: p.paymentStatus,
       });
       entry.totalPaid += p.paidAmount;

@@ -68,6 +68,11 @@
   background-color: var(--color-surface-alt);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  transition: border-color var(--transition-fast);
+}
+
+.dynamic-row:hover {
+  border-color: var(--color-border-strong);
 }
 
 .dynamic-row__grid {
@@ -82,9 +87,14 @@
   grid-template-columns: repeat(4, 1fr);
 }
 
+.dynamic-row__grid--host {
+  grid-template-columns: 2fr 1.2fr 1fr;
+}
+
 @media (max-width: 1100px) {
   .dynamic-row__grid { grid-template-columns: repeat(3, 1fr); }
   .dynamic-row__grid--expense { grid-template-columns: repeat(2, 1fr); }
+  .dynamic-row__grid--host { grid-template-columns: 1.5fr 1fr 1fr; }
 }
 @media (max-width: 640px) {
   .dynamic-row {
@@ -92,7 +102,8 @@
     align-items: stretch;
   }
   .dynamic-row__grid,
-  .dynamic-row__grid--expense {
+  .dynamic-row__grid--expense,
+  .dynamic-row__grid--host {
     grid-template-columns: 1fr;
   }
   .dynamic-row__remove {
@@ -117,6 +128,25 @@
   text-align: center;
   border: 1px dashed var(--color-border-strong);
   border-radius: var(--radius-md);
+}
+
+.host-tier-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  background-color: var(--color-warning-soft);
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  margin-top: var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-primary);
+}
+
+.host-tier-warning__icon {
+  color: var(--color-warning);
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
 /* ---------- Collapsible Live Summary panel ---------- */

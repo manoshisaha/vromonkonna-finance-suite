@@ -12,14 +12,14 @@
  */
 
 function makeParticipants(count, basePaid) {
-  const pickups = ['Farmgate', 'Uttara', 'Mirpur', 'Dhanmondi', 'Motijheel', 'Gulshan'];
+  const paymentModes = ['Bkash', 'Bank', 'Cash', 'Other'];
   const statuses = ['Paid', 'Partial', 'Due'];
   return Array.from({ length: count }, (_, i) => ({
     name: `Participant ${i + 1}`,
     phone: `01${(700000000 + i * 37).toString().slice(0, 9)}`,
     paidAmount: basePaid,
     dueAmount: i % 5 === 0 ? Math.round(basePaid * 0.2) : 0,
-    pickupPoint: pickups[i % pickups.length],
+    paymentMode: paymentModes[i % paymentModes.length],
     paymentStatus: i % 5 === 0 ? statuses[1] : statuses[0],
   }));
 }

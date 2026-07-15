@@ -12,6 +12,7 @@ import {
   calculateForeignHostBudget,
   validateHostTeam,
   determineHostCategory,
+  findHostsOutrankingLead,
 } from './calculations.js';
 import assert from 'node:assert/strict';
 
@@ -188,6 +189,25 @@ scenarioLabel('validateHostTeam — requires exactly one lead, no duplicates, al
     validateHostTeam([{ name: 'A', lifetimeTripCount: 5, role: 'lead' }]),
     []
   );
+});
+
+scenarioLabel('findHostsOutrankingLead — flags a senior host under a junior Lead, never affects payment', () => {
+  const hosts = [
+    { name: 'Junior Lead', lifetimeTripCount: 3, role: 'lead' },       // beginner
+    { name: 'Senior Co-host', lifetimeTripCount: 25, role: 'coHost' },  // advanced
+  ];
+
+  const flagged = findHostsOutrankingLead(hosts);
+  assert.equal(flagged.length, 1);
+  assert.equal(flagged[0].name, 'Senior Co-host');
+  assert.equal(flagged[0].category, 'advanced');
+
+  // No warning when everyone is at or below the Lead's tier.
+  const fine = findHostsOutrankingLead([
+    { name: 'Senior Lead', lifetimeTripCount: 25, role: 'lead' },
+    { name: 'Junior Co-host', lifetimeTripCount: 3, role: 'coHost' },
+  ]);
+  assert.equal(fine.length, 0);
 });
 
 console.log('\nAll calculation engine tests passed.');

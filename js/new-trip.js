@@ -32,7 +32,7 @@ import { renderLiveSummaryPanel } from '../components/live-summary-panel.js';
 import { createParticipantRow, getParticipantRowData } from '../components/participant-row.js';
 import { createExpenseRow, getExpenseRowData } from '../components/expense-row.js';
 import { createHostRow, refreshHostRowOptions, getHostRowData, setHostRowRole, setHostRowTierDisplay, ADD_HOST_OPTION_VALUE } from '../components/host-row.js';
-import { calculateTripFinancials, determineHostCategory, validateHostTeam } from './modules/calculations.js';
+import { calculateTripFinancials, determineHostCategory, validateHostTeam, findHostsOutrankingLead } from './modules/calculations.js';
 import { getCalculationSettings } from './modules/settings-store.js';
 import { getHosts, addHost } from './modules/host-directory.js';
 import { getAllCategories } from './modules/expense-category-store.js';
@@ -70,6 +70,7 @@ const summaryPanel = renderLiveSummaryPanel(document.getElementById('live-summar
 const hostRowsEl = document.getElementById('host-rows');
 const hostEmptyHint = document.getElementById('host-empty-hint');
 const hostCountLabel = document.getElementById('host-count-label');
+const hostTierWarning = document.getElementById('host-tier-warning');
 
 const participantRowsEl = document.getElementById('participant-rows');
 const expenseRowsEl = document.getElementById('expense-rows');
@@ -249,6 +250,8 @@ function recalculate() {
     setHostRowTierDisplay(row, CATEGORY_LABELS[category]);
   });
 
+  updateHostTierWarning(hostTeam, tripType);
+
   if (hostTeam.length === 0) {
     summaryPanel.update({
       income: 0, totalExpenses: 0, grossProfit: 0, tshirtFund: 0, adjustedProfit: 0,
@@ -273,6 +276,42 @@ function recalculate() {
 
   lastFinancials = result;
   summaryPanel.update(result, formatBDT);
+}
+
+/**
+ * Shows a heads-up (never blocking) if any non-Lead host outranks the
+ * Lead's own tier — e.g. an Advanced Co-host under a Beginner Lead. The
+ * Host Budget is still governed only by the Lead's tier either way; this
+ * is purely informational so whoever is entering the trip knows what
+ * they're setting up before they save.
+ */
+function updateHostTierWarning(hostTeam, tripType) {
+  if (tripType === 'foreign' || hostTeam.length < 2) {
+    hostTierWarning.hidden = true;
+    return;
+  }
+
+  const outranking = findHostsOutrankingLead(
+    hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
+    calcSettings
+  );
+
+  if (outranking.length === 0) {
+    hostTierWarning.hidden = true;
+    return;
+  }
+
+  const names = outranking.map((h) => `${h.name} (${CATEGORY_LABELS[h.category]})`).join(', ');
+  hostTierWarning.hidden = false;
+  hostTierWarning.innerHTML = `
+    <i class="ti ti-alert-triangle host-tier-warning__icon" aria-hidden="true"></i>
+    <span>
+      <strong>${names}</strong> ${outranking.length === 1 ? 'is' : 'are'} more senior than the Lead Host,
+      but the Host Budget is set by the Lead's tier only — so ${outranking.length === 1 ? 'this host' : 'these hosts'}
+      will be paid based on the Lead's smaller/fixed rate, not their own. If that's not intended, consider making
+      the more senior host the Lead instead.
+    </span>
+  `;
 }
 
 [packagePriceInput, otherIncomeInput].forEach((input) => {
@@ -307,7 +346,6 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
     foreignHostRatePerParticipant: tripTypeSelect.value === 'foreign' ? (Number(foreignHostRateInput.value) || 0) : null,
     hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
     packagePrice: Number(packagePriceInput.value) || 0,
-    maxParticipants: Number(document.getElementById('maxParticipants').value) || null,
     otherIncome: Number(otherIncomeInput.value) || 0,
     notes: document.getElementById('notes').value.trim(),
     participants,
@@ -337,7 +375,6 @@ function populateFromPrefill(trip) {
   document.getElementById('destination').value = trip.destination || '';
   document.getElementById('tripDate').value = trip.tripDate || '';
   packagePriceInput.value = trip.packagePrice ?? '';
-  document.getElementById('maxParticipants').value = trip.maxParticipants ?? '';
   otherIncomeInput.value = trip.otherIncome ?? '';
   document.getElementById('notes').value = trip.notes || '';
 
@@ -375,7 +412,7 @@ function populateFromPrefill(trip) {
     row.querySelector('[name="phone"]').value = p.phone || '';
     row.querySelector('[name="paidAmount"]').value = p.paidAmount ?? '';
     row.querySelector('[name="dueAmount"]').value = p.dueAmount ?? '';
-    row.querySelector('[name="pickupPoint"]').value = p.pickupPoint || '';
+    row.querySelector('[name="paymentMode"]').value = p.paymentMode || 'Cash';
     row.querySelector('[name="paymentStatus"]').value = p.paymentStatus || 'Paid';
     participantRowsEl.appendChild(row);
   });

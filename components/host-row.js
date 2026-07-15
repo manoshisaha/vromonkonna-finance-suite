@@ -48,7 +48,7 @@ export function createHostRow(hostsList, handlers = {}) {
   row.className = 'dynamic-row';
   row.dataset.rowId = rowId;
   row.innerHTML = `
-    <div class="dynamic-row__grid" style="grid-template-columns: 2fr 1.2fr 1fr;">
+    <div class="dynamic-row__grid dynamic-row__grid--host">
       <div class="field field--compact">
         <label class="field__label">Host</label>
         <select class="field__control" name="hostName">${hostOptionsHtml(hostsList, '')}</select>

@@ -69,7 +69,7 @@ function renderDirectoryRow(entry) {
     <tr>
       <td>${escapeHtml(t.tripName)}</td>
       <td>${formatDate(t.tripDate)}</td>
-      <td>${escapeHtml(t.pickupPoint)}</td>
+      <td>${escapeHtml(t.paymentMode)}</td>
       <td>${formatBDT(t.paidAmount)}</td>
       <td>${formatBDT(t.dueAmount)}</td>
       <td><span class="badge ${statusBadgeClass(t.paymentStatus)}">${t.paymentStatus}</span></td>
@@ -94,7 +94,7 @@ function renderDirectoryRow(entry) {
       <div class="directory-row__detail">
         <table class="directory-row__trip-table">
           <thead>
-            <tr><th>Trip</th><th>Date</th><th>Pickup point</th><th>Paid</th><th>Due</th><th>Status</th></tr>
+            <tr><th>Trip</th><th>Date</th><th>Payment mode</th><th>Paid</th><th>Due</th><th>Status</th></tr>
           </thead>
           <tbody>${tripRows}</tbody>
         </table>

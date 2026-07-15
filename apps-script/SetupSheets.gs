@@ -29,7 +29,7 @@ function setupSheets() {
   ]);
 
   createSheetWithHeaders_(ss, 'Participants', [
-    'ParticipantID', 'TripID', 'Name', 'Phone', 'PickupPoint',
+    'ParticipantID', 'TripID', 'Name', 'Phone', 'PaymentMode',
     'PaidAmount', 'DueAmount', 'PaymentStatus',
   ]);
 

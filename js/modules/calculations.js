@@ -55,6 +55,36 @@ export const DEFAULT_SETTINGS = {
 
 export const HOST_ROLES = ['lead', 'coHost', 'support'];
 
+/** Numeric seniority order for tier comparison — used only for the
+ * New Trip "tier mismatch" guidance warning below, not for any payment
+ * math (the payment formulas only ever look at the Lead's own tier). */
+export const TIER_RANK = { beginner: 0, intermediate: 1, advanced: 2 };
+
+/**
+ * Checks whether any non-Lead host on the team outranks the Lead's own
+ * tier (e.g. a Beginner Lead with an Advanced Co-host). This never
+ * blocks anything and has no effect on the Host Budget — it exists so
+ * New Trip can show a heads-up to whoever is entering the trip, since
+ * that pairing means the senior host will be paid off the Lead's
+ * (smaller) tier rather than their own.
+ * @param {HostInput[]} hosts
+ * @param {Object} [settings]
+ * @returns {{ name: string, category: string }[]} hosts that outrank the Lead (empty if none, or if there's no clear Lead)
+ */
+export function findHostsOutrankingLead(hosts, settings = DEFAULT_SETTINGS) {
+  if (!hosts || hosts.length === 0) return [];
+  const lead = hosts.find((h) => h.role === 'lead');
+  if (!lead) return [];
+
+  const leadCategory = determineHostCategory(lead.lifetimeTripCount, settings);
+  const leadRank = TIER_RANK[leadCategory];
+
+  return hosts
+    .filter((h) => h.role !== 'lead')
+    .map((h) => ({ name: h.name, category: determineHostCategory(h.lifetimeTripCount, settings) }))
+    .filter((h) => TIER_RANK[h.category] > leadRank);
+}
+
 /**
  * @typedef {Object} Expense
  * @property {string} category

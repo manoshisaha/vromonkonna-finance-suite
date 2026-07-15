@@ -116,6 +116,24 @@
   flex-shrink: 0;
 }
 
+@media (max-width: 640px) {
+  .directory-row__summary {
+    flex-wrap: wrap;
+  }
+  .directory-row__identity {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .directory-row__stats {
+    flex-basis: 100%;
+    gap: var(--space-4);
+    padding-left: calc(32px + var(--space-3));
+  }
+  .directory-row__detail {
+    padding-left: var(--space-4);
+  }
+}
+
 .directory-row[data-expanded="true"] .directory-row__chevron {
   transform: rotate(180deg);
 }

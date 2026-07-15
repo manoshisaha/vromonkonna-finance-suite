@@ -75,20 +75,24 @@
     left: 0;
     height: 100vh;
     transform: translateX(-100%);
+    transition: transform var(--transition-slow);
     z-index: var(--z-sidebar);
   }
   .app-shell[data-sidebar-open="true"] .sidebar {
     transform: translateX(0);
   }
   .sidebar-scrim {
-    display: none;
     position: fixed;
     inset: 0;
     background: rgba(15, 16, 21, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-slow);
     z-index: calc(var(--z-sidebar) - 1);
   }
   .app-shell[data-sidebar-open="true"] .sidebar-scrim {
-    display: block;
+    opacity: 1;
+    pointer-events: auto;
   }
   .app-content {
     padding: var(--space-4) var(--space-4) var(--space-10);

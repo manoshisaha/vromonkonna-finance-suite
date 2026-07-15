@@ -65,10 +65,6 @@
                   <input class="field__control" type="number" id="packagePrice" name="packagePrice" min="0" step="1" placeholder="0" required />
                 </div>
                 <div class="field">
-                  <label class="field__label" for="maxParticipants">Maximum participants</label>
-                  <input class="field__control" type="number" id="maxParticipants" name="maxParticipants" min="1" step="1" placeholder="0" />
-                </div>
-                <div class="field">
                   <label class="field__label" for="currentParticipantsDisplay">Current participants</label>
                   <input class="field__control field__control--readonly" type="text" id="currentParticipantsDisplay" readonly value="0" />
                   <span class="field-hint">Auto-counted from the Participants list below.</span>
@@ -104,6 +100,7 @@
                 </div>
               </div>
               <div class="dynamic-row-list" id="host-rows"></div>
+              <div class="host-tier-warning" id="host-tier-warning" hidden></div>
               <div class="empty-row-hint" id="host-empty-hint">No hosts added yet — add at least one.</div>
               <button type="button" class="btn btn-secondary" id="add-host-btn">
                 <i class="ti ti-plus" aria-hidden="true"></i> Add host

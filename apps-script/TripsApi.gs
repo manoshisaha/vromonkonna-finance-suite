@@ -66,7 +66,7 @@ function listTrips() {
         .map((p) => ({
           name: p.Name,
           phone: p.Phone,
-          pickupPoint: p.PickupPoint,
+          paymentMode: p.PaymentMode,
           paidAmount: p.PaidAmount,
           dueAmount: p.DueAmount,
           paymentStatus: p.PaymentStatus,
@@ -174,7 +174,7 @@ function saveTrip(payload) {
       TripID: tripId,
       Name: p.name,
       Phone: p.phone,
-      PickupPoint: p.pickupPoint,
+      PaymentMode: p.paymentMode,
       PaidAmount: p.paidAmount,
       DueAmount: p.dueAmount,
       PaymentStatus: p.paymentStatus,
