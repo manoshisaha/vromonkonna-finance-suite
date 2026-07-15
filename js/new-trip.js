@@ -29,7 +29,7 @@
 
 import { initShell, showToast } from './app.js';
 import { renderLiveSummaryPanel } from '../components/live-summary-panel.js';
-import { createParticipantRow, getParticipantRowData } from '../components/participant-row.js';
+import { createParticipantRow, getParticipantRowData, setParticipantRowData, parseParticipantBulkText } from '../components/participant-row.js';
 import { createExpenseRow, getExpenseRowData } from '../components/expense-row.js';
 import { createHostRow, refreshHostRowOptions, getHostRowData, setHostRowRole, setHostRowTierDisplay, ADD_HOST_OPTION_VALUE } from '../components/host-row.js';
 import { calculateTripFinancials, determineHostCategory, validateHostTeam, findHostsOutrankingLead } from './modules/calculations.js';
@@ -40,6 +40,8 @@ import { saveTripRemote, fetchTrips } from './modules/trips-store.js';
 import { buildParticipantDirectory } from './modules/participant-utils.js';
 import { formatBDT } from './utils/format.js';
 import { formModal } from '../components/form-modal.js';
+import { confirmDialog } from '../components/confirm-dialog.js';
+import { showLoadingState, showErrorState } from '../components/data-state.js';
 
 const PREFILL_STORAGE_KEY = 'vfs-new-trip-prefill';
 const prefill = readPrefillFromSessionStorage();
@@ -194,6 +196,44 @@ function addParticipantRow() {
 
 document.getElementById('add-participant-btn').addEventListener('click', addParticipantRow);
 
+document.getElementById('bulk-add-participants-btn').addEventListener('click', async () => {
+  const result = await formModal({
+    title: 'Paste participants from Excel/CSV',
+    fields: [
+      {
+        name: 'bulkText',
+        label: 'Paste rows below — Name, Phone, Paid, Due, Payment mode, Status (columns after Name are optional)',
+        type: 'textarea',
+        required: true,
+        placeholder: 'Rahim Uddin\t01712345678\t3000\t0\tBkash\tPaid\nKarim Ahmed\t01898765432\t2500\t500\tBank\tPartial',
+      },
+    ],
+    submitLabel: 'Add participants',
+  });
+
+  if (!result || !result.bulkText) return;
+
+  const parsed = parseParticipantBulkText(result.bulkText);
+  if (parsed.length === 0) {
+    showToast('No valid rows found — make sure each row at least has a name or phone', 'warning');
+    return;
+  }
+
+  parsed.forEach((data) => {
+    const row = createParticipantRow({
+      phoneDirectory,
+      onChange: recalculate,
+      onRemove: () => { updateEmptyHints(); recalculate(); },
+    });
+    setParticipantRowData(row, data);
+    participantRowsEl.appendChild(row);
+  });
+
+  updateEmptyHints();
+  recalculate();
+  showToast(`Added ${parsed.length} participant${parsed.length === 1 ? '' : 's'}`, 'success');
+});
+
 /** ---------- Expenses ---------- */
 
 function addExpenseRow() {
@@ -227,6 +267,8 @@ function updateEmptyHints() {
 }
 
 function recalculate() {
+  saveDraftIfApplicable();
+
   const participantCount = participantRowsEl.children.length;
   const packagePrice = Number(packagePriceInput.value) || 0;
   const otherIncome = Number(otherIncomeInput.value) || 0;
@@ -347,6 +389,7 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
 
   try {
     await saveTripRemote(payload);
+    clearDraft();
     showToast('Trip saved', 'success');
     window.location.href = 'trip-history.html';
   } catch (err) {
@@ -356,6 +399,103 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
     saveTripBtn.textContent = 'Save trip';
   }
 });
+
+/** ---------- Autosave draft (protects against a dropped connection or crashed tab) ---------- */
+
+const DRAFT_STORAGE_KEY = 'vfs-new-trip-draft';
+
+/** Only autosave when creating a brand-new trip — editing an existing one has its own save flow. */
+function saveDraftIfApplicable() {
+  if (prefill) return;
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(collectDraftState()));
+  } catch {
+    // Non-fatal — autosave is a nice-to-have, not a requirement.
+  }
+}
+
+function collectDraftState() {
+  return {
+    savedAt: new Date().toISOString(),
+    tripName: document.getElementById('tripName').value,
+    destination: document.getElementById('destination').value,
+    tripDate: document.getElementById('tripDate').value,
+    tripType: tripTypeSelect.value,
+    packagePrice: packagePriceInput.value,
+    otherIncome: otherIncomeInput.value,
+    notes: document.getElementById('notes').value,
+    hosts: Array.from(hostRowsEl.children).map((row) => getHostRowData(row)),
+    participants: Array.from(participantRowsEl.children).map((row) => getParticipantRowData(row)),
+    expenses: Array.from(expenseRowsEl.children).map((row) => getExpenseRowData(row)),
+  };
+}
+
+function readDraft() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function clearDraft() {
+  localStorage.removeItem(DRAFT_STORAGE_KEY);
+}
+
+/** Rebuilds the whole form (hosts, participants, expenses, trip info) from a saved draft. */
+function applyDraftState(draft) {
+  document.getElementById('tripName').value = draft.tripName || '';
+  document.getElementById('destination').value = draft.destination || '';
+  document.getElementById('tripDate').value = draft.tripDate || '';
+  tripTypeSelect.value = draft.tripType || 'domestic';
+  packagePriceInput.value = draft.packagePrice || '';
+  otherIncomeInput.value = draft.otherIncome || '';
+  document.getElementById('notes').value = draft.notes || '';
+
+  (draft.hosts || []).forEach((h) => {
+    if (!h.name) return;
+    const row = createHostRow(hosts, {
+      defaultRole: h.role || 'coHost',
+      onChange: (row) => handleHostRowChange(row),
+      onRoleChange: recalculate,
+      onRemove: () => { updateHostCount(); recalculate(); },
+    });
+    hostRowsEl.appendChild(row);
+    refreshHostRowOptions(row, hosts, h.name);
+    setHostRowRole(row, h.role || 'coHost');
+  });
+
+  (draft.participants || []).forEach((p) => {
+    const row = createParticipantRow({
+      phoneDirectory,
+      onChange: recalculate,
+      onRemove: () => { updateEmptyHints(); recalculate(); },
+    });
+    setParticipantRowData(row, p);
+    participantRowsEl.appendChild(row);
+  });
+
+  (draft.expenses || []).forEach((e) => {
+    const row = createExpenseRow({ categories: expenseCategories, onChange: recalculate, onRemove: () => { updateEmptyHints(); recalculate(); } });
+    const categorySelect = row.querySelector('[name="category"]');
+    const hasOption = Array.from(categorySelect.options).some((o) => o.value === e.category);
+    if (hasOption) {
+      categorySelect.value = e.category;
+    } else {
+      categorySelect.value = '__custom__';
+      row.querySelector('.custom-category-field').hidden = false;
+      row.querySelector('[name="customCategory"]').value = e.category;
+    }
+    row.querySelector('[name="amount"]').value = e.amount ?? '';
+    row.querySelector('[name="note"]').value = e.note || '';
+    expenseRowsEl.appendChild(row);
+  });
+
+  if (hostRowsEl.children.length === 0) addHostRow();
+  if (participantRowsEl.children.length === 0) addParticipantRow();
+  if (expenseRowsEl.children.length === 0) addExpenseRow();
+}
 
 /** ---------- Prefill (Edit / Duplicate from Trip History) ---------- */
 
@@ -423,6 +563,8 @@ function populateFromPrefill(trip) {
 /** ---------- Init ---------- */
 
 async function init() {
+  showLoadingState(hostRowsEl, 'Loading hosts, categories, and settings...');
+
   try {
     [hosts, expenseCategories, calcSettings] = await Promise.all([
       getHosts(),
@@ -432,7 +574,11 @@ async function init() {
   } catch (err) {
     console.error(err);
     showToast('Failed to load hosts/categories/settings — check your connection', 'danger');
+    showErrorState(hostRowsEl, "Couldn't load this form — check your connection and try again.", init);
+    return;
   }
+
+  hostRowsEl.innerHTML = '';
 
   // Best-effort: powers phone-number autocomplete for participants. Not
   // critical to the rest of the page, so a failure here is silent rather
@@ -450,9 +596,23 @@ async function init() {
   if (prefill && prefill.trip) {
     populateFromPrefill(prefill.trip);
   } else {
-    addHostRow();
-    addParticipantRow();
-    addExpenseRow();
+    const draft = readDraft();
+    const restore = draft && await confirmDialog({
+      title: 'Restore unsaved trip?',
+      message: `You have an unsaved trip from ${new Date(draft.savedAt).toLocaleString()} — pick up where you left off?`,
+      confirmLabel: 'Restore draft',
+      cancelLabel: 'Start fresh',
+      danger: false,
+    });
+
+    if (restore) {
+      applyDraftState(draft);
+    } else {
+      clearDraft();
+      addHostRow();
+      addParticipantRow();
+      addExpenseRow();
+    }
   }
 
   updateHostCount();

@@ -109,9 +109,14 @@
             <div class="panel">
               <div class="dynamic-row-list" id="participant-rows"></div>
               <div class="empty-row-hint" id="participant-empty-hint">No participants added yet.</div>
-              <button type="button" class="btn btn-secondary" id="add-participant-btn">
-                <i class="ti ti-plus" aria-hidden="true"></i> Add participant
-              </button>
+              <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                <button type="button" class="btn btn-secondary" id="add-participant-btn">
+                  <i class="ti ti-plus" aria-hidden="true"></i> Add participant
+                </button>
+                <button type="button" class="btn btn-secondary" id="bulk-add-participants-btn">
+                  <i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Paste from Excel/CSV
+                </button>
+              </div>
             </div>
           </section>
 

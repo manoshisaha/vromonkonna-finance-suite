@@ -15,6 +15,7 @@ import { enrichTripWithFinancials, uniqueValues, uniqueHostNames } from './modul
 import { filterTripsByReport, summarizeTrips, calculateHostEarnings, getAvailableYears, getCurrentMonthValue } from './modules/report-utils.js';
 import { exportTripsCSV, exportTripsExcel, exportTripsPDF } from './modules/export-utils.js';
 import { renderStatCards } from '../components/stat-card.js';
+import { showLoadingState, showErrorState } from '../components/data-state.js';
 import { formatBDT, formatNumber } from './utils/format.js';
 
 initShell({
@@ -202,6 +203,8 @@ document.getElementById('export-pdf-btn').addEventListener('click', () => {
 /** ---------- Init ---------- */
 
 async function init() {
+  showLoadingState(summaryGrid, 'Loading reports...');
+
   try {
     const [rawTrips, calcSettings] = await Promise.all([fetchTrips(), getCalculationSettings()]);
     trips = rawTrips.map((trip) => enrichTripWithFinancials(trip, calcSettings));
@@ -210,6 +213,7 @@ async function init() {
   } catch (err) {
     console.error(err);
     showToast('Failed to load reports', 'danger');
+    showErrorState(summaryGrid, "Couldn't load reports — check your connection and try again.", init);
   }
 }
 

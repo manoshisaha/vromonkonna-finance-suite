@@ -288,6 +288,8 @@ function printTrip(trip) {
 /** ---------- Init ---------- */
 
 async function init() {
+  tbody.innerHTML = tableStateRow('Loading trips...');
+
   try {
     trips = await loadTrips();
     populateFilterOptions();
@@ -295,7 +297,32 @@ async function init() {
   } catch (err) {
     console.error(err);
     showToast('Failed to load trip history', 'danger');
+    tbody.innerHTML = tableStateRow(null, "Couldn't load trip history — check your connection and try again.");
+    tbody.querySelector('[data-action="retry"]')?.addEventListener('click', init);
   }
+}
+
+/** Builds a full-width <tr> for loading/error states inside the trips <tbody>. */
+function tableStateRow(loadingMessage, errorMessage) {
+  if (errorMessage) {
+    return `
+      <tr><td colspan="9">
+        <div class="data-state data-state--error">
+          <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+          <span class="data-state__message">${errorMessage}</span>
+          <button type="button" class="btn btn-secondary btn-sm" data-action="retry">Retry</button>
+        </div>
+      </td></tr>
+    `;
+  }
+  return `
+    <tr><td colspan="9">
+      <div class="data-state">
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="data-state__message">${loadingMessage}</span>
+      </div>
+    </td></tr>
+  `;
 }
 
 init();

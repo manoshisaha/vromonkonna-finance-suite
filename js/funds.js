@@ -51,6 +51,16 @@ function typeBadgeLabel(type) {
 }
 
 async function renderLedger() {
+  ledgerBody.innerHTML = `
+    <tr><td colspan="6">
+      <div class="data-state">
+        <span class="spinner" aria-hidden="true"></span>
+        <span class="data-state__message">Loading ledger...</span>
+      </div>
+    </td></tr>
+  `;
+  ledgerEmpty.hidden = true;
+
   try {
     const { entries, currentBalance } = await buildLedger(activeFund);
 
@@ -81,6 +91,16 @@ async function renderLedger() {
   } catch (err) {
     console.error(err);
     showToast('Failed to load fund ledger — check your connection', 'danger');
+    ledgerBody.innerHTML = `
+      <tr><td colspan="6">
+        <div class="data-state data-state--error">
+          <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+          <span class="data-state__message">Couldn't load the ledger — check your connection and try again.</span>
+          <button type="button" class="btn btn-secondary btn-sm" data-action="retry">Retry</button>
+        </div>
+      </td></tr>
+    `;
+    ledgerBody.querySelector('[data-action="retry"]')?.addEventListener('click', renderLedger);
   }
 }
 

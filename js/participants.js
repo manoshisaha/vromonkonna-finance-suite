@@ -11,6 +11,7 @@
 import { initShell, showToast } from './app.js';
 import { fetchTrips } from './modules/trips-store.js';
 import { buildParticipantDirectory } from './modules/participant-utils.js';
+import { showLoadingState, showErrorState } from '../components/data-state.js';
 import { formatBDT } from './utils/format.js';
 
 initShell({
@@ -150,12 +151,15 @@ searchInput.addEventListener('input', () => {
 });
 
 async function init() {
+  showLoadingState(listEl, 'Loading participants...');
+
   try {
     directory = await loadDirectory();
     render();
   } catch (err) {
     console.error(err);
     showToast('Failed to load participants', 'danger');
+    showErrorState(listEl, "Couldn't load participants — check your connection and try again.", init);
   }
 }
 

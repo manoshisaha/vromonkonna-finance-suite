@@ -11,6 +11,7 @@
 
 import { initShell, showToast } from './app.js';
 import { renderStatCards } from '../components/stat-card.js';
+import { showLoadingState, showErrorState } from '../components/data-state.js';
 import { formatBDT, formatNumber } from './utils/format.js';
 import { fetchTrips } from './modules/trips-store.js';
 import { getCalculationSettings } from './modules/settings-store.js';
@@ -166,9 +167,12 @@ function renderCharts(data) {
 }
 
 async function init() {
+  const statGrid = document.getElementById('stat-grid');
+  showLoadingState(statGrid, 'Loading dashboard...');
+
   try {
     const data = await loadDashboardData();
-    renderStatCards(document.getElementById('stat-grid'), buildStatCards(data.totals));
+    renderStatCards(statGrid, buildStatCards(data.totals));
 
     if (typeof Chart === 'undefined') {
       window.addEventListener('load', () => renderCharts(data));
@@ -178,6 +182,7 @@ async function init() {
   } catch (err) {
     console.error(err);
     showToast('Failed to load dashboard data', 'danger');
+    showErrorState(statGrid, "Couldn't load your dashboard — check your connection and try again.", init);
   }
 }
 
