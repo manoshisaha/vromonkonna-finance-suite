@@ -13,7 +13,6 @@
   <link rel="stylesheet" href="../css/components.css" />
   <link rel="stylesheet" href="../css/new-trip.css" />
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.47.0/dist/tabler-icons.min.css" />
 </head>
 <body>
   <div class="app-shell" data-sidebar-open="false">
@@ -59,20 +58,11 @@
                     <option value="domestic">Domestic</option>
                     <option value="foreign">Foreign</option>
                   </select>
-                  <span class="field-hint">Foreign trips use a per-participant host fee instead of the tier system.</span>
+                  <span class="field-hint">Foreign trips use a fixed fee set in the Hosts section below, instead of the tier system.</span>
                 </div>
                 <div class="field">
                   <label class="field__label" for="packagePrice">Package price (per person)</label>
                   <input class="field__control" type="number" id="packagePrice" name="packagePrice" min="0" step="1" placeholder="0" required />
-                </div>
-                <div class="field" id="foreignRateField" hidden>
-                  <label class="field__label" for="foreignHostBase">Fixed base amount (foreign trip)</label>
-                  <input class="field__control" type="number" id="foreignHostBase" name="foreignHostBase" min="0" step="1" placeholder="e.g. 20000" />
-                </div>
-                <div class="field" id="foreignRatePerParticipantField" hidden>
-                  <label class="field__label" for="foreignHostRate">Host fee per participant (foreign trip)</label>
-                  <input class="field__control" type="number" id="foreignHostRate" name="foreignHostRate" min="0" step="1" placeholder="e.g. 1500" />
-                  <span class="field-hint">Host Budget = base amount + (this rate × number of participants). Leave either at 0 if you only want one component.</span>
                 </div>
                 <div class="field">
                   <label class="field__label" for="maxParticipants">Maximum participants</label>
@@ -102,13 +92,24 @@
               <span class="form-section__count" id="host-count-label">0 hosts</span>
             </div>
             <div class="panel">
+              <div class="field-grid" id="foreignFeeFields" hidden style="margin-bottom: var(--space-4);">
+                <div class="field" style="margin-bottom: 0;">
+                  <label class="field__label" for="foreignHostBase">Fixed base amount</label>
+                  <input class="field__control" type="number" id="foreignHostBase" name="foreignHostBase" min="0" step="1" placeholder="e.g. 20000" />
+                </div>
+                <div class="field" style="margin-bottom: 0;">
+                  <label class="field__label" for="foreignHostRate">Fee per participant</label>
+                  <input class="field__control" type="number" id="foreignHostRate" name="foreignHostRate" min="0" step="1" placeholder="e.g. 1500" />
+                  <span class="field-hint">Host Budget = base amount + (this rate × participants). Leave either at 0 to use only one component.</span>
+                </div>
+              </div>
               <div class="dynamic-row-list" id="host-rows"></div>
               <div class="empty-row-hint" id="host-empty-hint">No hosts added yet — add at least one.</div>
               <button type="button" class="btn btn-secondary" id="add-host-btn">
                 <i class="ti ti-plus" aria-hidden="true"></i> Add host
               </button>
               <p class="field-hint" style="margin-top: var(--space-3);">
-                Every trip needs exactly one Lead Host. On domestic trips, the Lead's tier sets the Host Budget (Co-hosts and Support Hosts don't affect it). On foreign trips, the Host Budget comes from the per-participant rate above instead. The budget is then split between all hosts by role weight — see the live summary below.
+                Every trip needs exactly one Lead Host. On domestic trips, the Lead's tier sets the Host Budget (Co-hosts and Support Hosts don't affect it). On foreign trips, the Host Budget comes from the fee fields above instead. The budget is then split between all hosts by role weight — see the live summary below.
               </p>
             </div>
           </section>

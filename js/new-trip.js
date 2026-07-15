@@ -84,8 +84,7 @@ const otherIncomeInput = document.getElementById('otherIncome');
 const saveTripBtn = document.getElementById('save-trip-btn');
 
 const tripTypeSelect = document.getElementById('tripType');
-const foreignRateField = document.getElementById('foreignRateField');
-const foreignRatePerParticipantField = document.getElementById('foreignRatePerParticipantField');
+const foreignFeeFields = document.getElementById('foreignFeeFields');
 const foreignHostBaseInput = document.getElementById('foreignHostBase');
 const foreignHostRateInput = document.getElementById('foreignHostRate');
 
@@ -102,8 +101,7 @@ let lastFinancials = null;
 
 function updateTripTypeVisibility() {
   const isForeign = tripTypeSelect.value === 'foreign';
-  foreignRateField.hidden = !isForeign;
-  foreignRatePerParticipantField.hidden = !isForeign;
+  foreignFeeFields.hidden = !isForeign;
 }
 
 tripTypeSelect.addEventListener('change', () => {

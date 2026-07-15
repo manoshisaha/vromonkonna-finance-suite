@@ -10,8 +10,10 @@
 
 import { renderSidebar } from '../components/sidebar.js';
 import { renderTopbar, applyStoredTheme } from '../components/topbar.js';
+import { initIcons } from '../components/icons.js';
 
 applyStoredTheme();
+initIcons();
 
 /**
  * Mounts the shared shell (sidebar + topbar) for the current page.

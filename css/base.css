@@ -67,6 +67,25 @@ img {
   display: block;
 }
 
+/* Inline-SVG icon sizing — see components/icons.js. Icons inherit color
+   via currentColor and size via 1em, same as the webfont approach they
+   replaced, so no other CSS needed to change. */
+i.ti {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1em;
+  vertical-align: -0.125em;
+  flex-shrink: 0;
+}
+
+i.ti svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 svg {
   display: block;
 }
