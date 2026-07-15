@@ -129,7 +129,7 @@
                   <div class="info-popover__panel" hidden>
                     <strong>How host payment works</strong>
                     <p>Every trip has exactly one Host Budget, no matter how many hosts are assigned to it.</p>
-                    <p><strong style="font-size: inherit; display: inline;">Domestic trips:</strong> the Host Budget is set entirely by the Lead Host's tier below — Beginner is a fixed amount, Intermediate and Advanced are a percentage of Adjusted Profit with a minimum floor and optional maximum ceiling. Co-host and Support Host tiers never affect the budget, even if they're more senior than the Lead.</p>
+                    <p><strong style="font-size: inherit; display: inline;">Domestic trips:</strong> the Host Budget is set entirely by the Lead Host's tier below — Beginner is a fixed amount (optionally floored/capped by its own Minimum/Maximum), Intermediate and Advanced are a percentage of Adjusted Profit with a minimum floor and optional maximum ceiling. Co-host and Support Host tiers never affect the budget, even if they're more senior than the Lead.</p>
                     <p><strong style="font-size: inherit; display: inline;">Foreign trips:</strong> the Host Budget is a fixed base amount plus a per-participant rate instead — set per trip in New Trip, not from the tiers below.</p>
                     <p>Once the total is set, it's split among every assigned host according to their Role Weight (Lead / Co-host / Support), configured just below.</p>
                   </div>
@@ -146,8 +146,8 @@
                     <td>Beginner</td>
                     <td>0 – <input type="number" id="beginnerMaxTrips" min="0" /></td>
                     <td>Fixed <input type="number" id="beginnerAmount" min="0" /></td>
-                    <td>—</td>
-                    <td>—</td>
+                    <td><input type="number" id="beginnerMinimum" min="0" placeholder="No floor" /></td>
+                    <td><input type="number" id="beginnerMaximum" min="0" placeholder="No cap" /></td>
                   </tr>
                   <tr>
                     <td>Intermediate</td>

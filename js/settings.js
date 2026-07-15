@@ -59,6 +59,8 @@ async function loadForm() {
 
   document.getElementById('beginnerMaxTrips').value = s.hostTiers.beginner.maxTrips;
   document.getElementById('beginnerAmount').value = s.hostTiers.beginner.amount;
+  document.getElementById('beginnerMinimum').value = s.hostTiers.beginner.minimum ?? '';
+  document.getElementById('beginnerMaximum').value = s.hostTiers.beginner.maximum ?? '';
   document.getElementById('intermediateMaxTrips').value = s.hostTiers.intermediate.maxTrips;
   document.getElementById('intermediatePercent').value = s.hostTiers.intermediate.percent;
   document.getElementById('intermediateMinimum').value = s.hostTiers.intermediate.minimum;
@@ -310,6 +312,8 @@ form.addEventListener('submit', async (event) => {
       beginner: {
         maxTrips: Number(document.getElementById('beginnerMaxTrips').value) || 0,
         amount: Number(document.getElementById('beginnerAmount').value) || 0,
+        minimum: document.getElementById('beginnerMinimum').value === '' ? null : Number(document.getElementById('beginnerMinimum').value),
+        maximum: document.getElementById('beginnerMaximum').value === '' ? null : Number(document.getElementById('beginnerMaximum').value),
       },
       intermediate: {
         maxTrips: Number(document.getElementById('intermediateMaxTrips').value) || 0,

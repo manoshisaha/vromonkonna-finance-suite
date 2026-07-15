@@ -22,7 +22,12 @@ export const DEFAULT_APP_SETTINGS = {
   tshirtPrice: CALC_DEFAULTS.tshirtPrice,
   socialMediaFundPercent: CALC_DEFAULTS.socialMediaFundPercent * 100,
   hostTiers: {
-    beginner: { maxTrips: CALC_DEFAULTS.hostTiers.beginner.maxTrips, amount: CALC_DEFAULTS.hostTiers.beginner.amount },
+    beginner: {
+      maxTrips: CALC_DEFAULTS.hostTiers.beginner.maxTrips,
+      amount: CALC_DEFAULTS.hostTiers.beginner.amount,
+      minimum: CALC_DEFAULTS.hostTiers.beginner.minimum,
+      maximum: CALC_DEFAULTS.hostTiers.beginner.maximum,
+    },
     intermediate: {
       maxTrips: CALC_DEFAULTS.hostTiers.intermediate.maxTrips,
       percent: CALC_DEFAULTS.hostTiers.intermediate.percent * 100,
@@ -109,7 +114,13 @@ export async function getCalculationSettings() {
     tshirtPrice: s.tshirtPrice,
     socialMediaFundPercent: s.socialMediaFundPercent / 100,
     hostTiers: {
-      beginner: { maxTrips: s.hostTiers.beginner.maxTrips, type: 'fixed', amount: s.hostTiers.beginner.amount },
+      beginner: {
+        maxTrips: s.hostTiers.beginner.maxTrips,
+        type: 'fixed',
+        amount: s.hostTiers.beginner.amount,
+        minimum: s.hostTiers.beginner.minimum ?? null,
+        maximum: s.hostTiers.beginner.maximum ?? null,
+      },
       intermediate: {
         maxTrips: s.hostTiers.intermediate.maxTrips,
         type: 'percent',

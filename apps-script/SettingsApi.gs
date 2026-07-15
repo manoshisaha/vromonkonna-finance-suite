@@ -14,7 +14,7 @@
 const SETTINGS_SHEET = 'Settings';
 
 const DEFAULT_HOST_TIERS_ = {
-  beginner: { maxTrips: 8, amount: 500 },
+  beginner: { maxTrips: 8, amount: 500, minimum: null, maximum: null },
   intermediate: { maxTrips: 20, percent: 15, minimum: 1000, maximum: null },
   advanced: { percent: 30, minimum: 2000, maximum: null },
 };

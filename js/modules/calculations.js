@@ -42,7 +42,7 @@ export const DEFAULT_SETTINGS = {
   tshirtPrice: 250,
   socialMediaFundPercent: 0.10,
   hostTiers: {
-    beginner: { maxTrips: 8, type: 'fixed', amount: 500 },
+    beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: null },
     intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: null },
     advanced: { type: 'percent', percent: 0.30, minimum: 2000, maximum: null },
   },
@@ -280,7 +280,10 @@ export function calculateHostPayment(category, adjustedProfit, settings = DEFAUL
   if (!tier) throw new Error(`Unknown host category: ${category}`);
 
   if (tier.type === 'fixed') {
-    return tier.amount;
+    let payment = tier.amount;
+    if (tier.minimum != null) payment = Math.max(payment, tier.minimum);
+    if (tier.maximum != null) payment = Math.min(payment, tier.maximum);
+    return payment;
   }
 
   let payment = safeNum(adjustedProfit) * tier.percent;

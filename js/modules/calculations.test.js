@@ -210,4 +210,30 @@ scenarioLabel('findHostsOutrankingLead — flags a senior host under a junior Le
   assert.equal(fine.length, 0);
 });
 
+scenarioLabel('Beginner tier — optional minimum/maximum clamp around the fixed amount', () => {
+  const settings = {
+    tshirtPrice: 250,
+    socialMediaFundPercent: 0.10,
+    hostTiers: {
+      beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: 800, maximum: 1200 },
+      intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: null },
+      advanced: { type: 'percent', percent: 0.30, minimum: 2000, maximum: null },
+    },
+    roleWeights: { lead: 5, coHost: 3, support: 2 },
+  };
+
+  // Fixed amount (500) is below the minimum (800) -> floored up to 800.
+  assert.equal(calculateHostPayment('beginner', 15000, settings), 800);
+
+  // Fixed amount above a lower maximum gets capped.
+  const cappedSettings = {
+    ...settings,
+    hostTiers: { ...settings.hostTiers, beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: 300 } },
+  };
+  assert.equal(calculateHostPayment('beginner', 15000, cappedSettings), 300);
+
+  // Leaving both blank (null) behaves exactly as before — pure fixed amount.
+  assert.equal(calculateHostPayment('beginner', 15000), 500);
+});
+
 console.log('\nAll calculation engine tests passed.');
