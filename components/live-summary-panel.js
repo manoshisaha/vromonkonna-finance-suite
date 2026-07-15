@@ -40,7 +40,7 @@ export function renderLiveSummaryPanel(targetEl) {
           ${metricHtml('grossProfit', 'Gross profit')}
           ${metricHtml('tshirtFund', 'T-shirt fund')}
           ${metricHtml('adjustedProfit', 'Adjusted profit')}
-          ${metricHtml('hostPayment', 'Host budget')}
+          ${metricHtml('hostPayment', 'Host payment (actual)')}
           ${metricHtml('socialMediaFund', 'Social media fund')}
           ${metricHtml('organizationProfit', 'Organization profit')}
         </div>
@@ -78,6 +78,8 @@ export function renderLiveSummaryPanel(targetEl) {
       if (breakdownEl) {
         if (result.hostBreakdown && result.hostBreakdown.length > 0) {
           breakdownEl.hidden = false;
+          const totalDiffers = Math.round(result.hostPayment) !== Math.round(result.hostBudget);
+
           breakdownEl.innerHTML = `
             <span class="live-summary__host-label">Host budget split</span>
             <div class="live-summary__host-breakdown-rows">
@@ -88,6 +90,12 @@ export function renderLiveSummaryPanel(targetEl) {
                 </div>
               `).join('')}
             </div>
+            ${totalDiffers ? `
+              <p class="live-summary__clamp-note">
+                Total actually paid to hosts (${formatFn(result.hostPayment)}) differs from the Host Budget (${formatFn(result.hostBudget)}) —
+                one host's own tier minimum or maximum adjusted their individual share. This is expected.
+              </p>
+            ` : ''}
           `;
         } else {
           breakdownEl.hidden = true;

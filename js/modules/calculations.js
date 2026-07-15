@@ -129,7 +129,8 @@ export function findHostsOutrankingLead(hosts, settings = DEFAULT_SETTINGS) {
  * @property {number} tshirtFund
  * @property {number} adjustedProfit
  * @property {'beginner'|'intermediate'|'advanced'|'foreign'} hostCategory  - the Lead Host's tier (domestic) or 'foreign'
- * @property {number} hostPayment       - the Host Budget: one total, regardless of host count
+ * @property {number} hostBudget          - the Stage-1 theoretical total, from the Lead's tier (or the foreign flat fee) alone, before any per-host clamping
+ * @property {number} hostPayment         - the ACTUAL total paid across all hosts (sum of hostBreakdown) — this is what's subtracted to get Remaining, and can differ from hostBudget once Stage 2 clamping kicks in
  * @property {HostPaymentBreakdown[]} hostBreakdown  - per-host split of hostPayment
  * @property {number} remaining
  * @property {number} socialMediaFund
@@ -165,8 +166,13 @@ export function calculateTripFinancials(input) {
     hostBudget = lead ? calculateHostPayment(hostCategory, adjustedProfit, settings) : 0;
   }
 
-  const hostBreakdown = distributeHostBudget(hostTeam, hostBudget, settings);
-  const hostPayment = hostBudget;
+  const hostBreakdown = distributeHostBudget(hostTeam, hostBudget, settings, tripType);
+  // The actual cash paid to hosts — this can differ from `hostBudget` once
+  // Stage 2's per-host minimum/maximum clamping kicks in (a minimum is
+  // always honored even if it pushes the total above the budget). This is
+  // the number that must flow into Remaining/Org Profit, since that's what
+  // actually left the organization's pocket.
+  const hostPayment = hostBreakdown.reduce((sum, h) => sum + h.amount, 0);
 
   const remaining = adjustedProfit - hostPayment;
   const socialMediaFund = calculateSocialMediaFund(remaining, settings);
@@ -179,6 +185,7 @@ export function calculateTripFinancials(input) {
     tshirtFund,
     adjustedProfit,
     hostCategory,
+    hostBudget,
     hostPayment,
     hostBreakdown,
     tripType,
@@ -310,27 +317,76 @@ export function calculateForeignHostBudget(baseAmount, ratePerParticipant, parti
  * @param {Object} [settings]
  * @returns {HostPaymentBreakdown[]}
  */
-export function distributeHostBudget(hosts, hostBudget, settings = DEFAULT_SETTINGS) {
+/**
+ * Splits a single Host Budget total among the host team, proportional to
+ * each host's role weight (Settings-configurable; default Lead 5,
+ * Co-host 3, Support 2) — then clamps each host's individual share to
+ * THEIR OWN tier's minimum/maximum (Stage 2).
+ *
+ * Minimums are always honored, even if that pushes the total paid above
+ * the Stage-1 Host Budget — e.g. a junior co-host's small weighted slice
+ * of a big trip still can't fall below their own tier's floor. Maximums
+ * still cap a share downward. Because of this, the sum of shares is only
+ * guaranteed to exactly equal `hostBudget` when no host needed clamping;
+ * when clamping happens, the total may differ from the budget on
+ * purpose — see the design note in the Settings info popover.
+ * @param {HostInput[]} hosts
+ * @param {number} hostBudget
+ * @param {Object} [settings]
+ * @param {'domestic'|'foreign'} [tripType] - foreign trips skip Stage 2's per-host domestic-tier clamping entirely, since tiers don't apply to foreign trips at all
+ * @returns {HostPaymentBreakdown[]}
+ */
+export function distributeHostBudget(hosts, hostBudget, settings = DEFAULT_SETTINGS, tripType = 'domestic') {
   if (!hosts || hosts.length === 0) return [];
 
   const weights = settings.roleWeights || DEFAULT_SETTINGS.roleWeights;
   const totalWeight = hosts.reduce((sum, h) => sum + (weights[h.role] || 0), 0);
+
+  let anyClamped = false;
 
   const shares = hosts.map((h) => {
     const weight = weights[h.role] || 0;
     const rawShare = totalWeight > 0
       ? safeNum(hostBudget) * (weight / totalWeight)
       : safeNum(hostBudget) / hosts.length;
-    return { name: h.name, role: h.role, weight, amount: Math.round(rawShare) };
+
+    let amount = Math.round(rawShare);
+
+    // Stage 2: clamp to this host's OWN tier — not the Lead's — so a
+    // junior host riding along on a senior-led trip still gets their own
+    // floor, and a senior host doesn't walk away with more than their
+    // own ceiling even if their weighted slice would otherwise exceed it.
+    // Skipped entirely on foreign trips, where domestic tiers don't apply.
+    if (tripType !== 'foreign' && h.lifetimeTripCount != null) {
+      const ownCategory = determineHostCategory(h.lifetimeTripCount, settings);
+      const ownTier = settings.hostTiers[ownCategory];
+      if (ownTier) {
+        if (ownTier.minimum != null && amount < ownTier.minimum) {
+          amount = ownTier.minimum;
+          anyClamped = true;
+        }
+        if (ownTier.maximum != null && amount > ownTier.maximum) {
+          amount = ownTier.maximum;
+          anyClamped = true;
+        }
+      }
+    }
+
+    return { name: h.name, role: h.role, weight, amount };
   });
 
-  const sumRounded = shares.reduce((sum, h) => sum + h.amount, 0);
-  const remainder = Math.round(safeNum(hostBudget)) - sumRounded;
-
-  if (remainder !== 0 && shares.length > 0) {
-    const leadIndex = shares.findIndex((h) => h.role === 'lead');
-    const targetIndex = leadIndex !== -1 ? leadIndex : 0;
-    shares[targetIndex].amount += remainder;
+  // Only reconcile rounding drift back onto the Lead when nobody was
+  // clamped — once a minimum/maximum has kicked in, the total is allowed
+  // to legitimately differ from the Stage-1 budget, so forcing an exact
+  // match here would silently override a minimum guarantee.
+  if (!anyClamped) {
+    const sumRounded = shares.reduce((sum, h) => sum + h.amount, 0);
+    const remainder = Math.round(safeNum(hostBudget)) - sumRounded;
+    if (remainder !== 0 && shares.length > 0) {
+      const leadIndex = shares.findIndex((h) => h.role === 'lead');
+      const targetIndex = leadIndex !== -1 ? leadIndex : 0;
+      shares[targetIndex].amount += remainder;
+    }
   }
 
   return shares;

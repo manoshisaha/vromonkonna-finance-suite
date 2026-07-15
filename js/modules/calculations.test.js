@@ -120,19 +120,31 @@ scenarioLabel('Co-host and Support tiers never affect the Host Budget — only t
     expenses: [{ category: 'Hotel', amount: 40000 }],
     hosts: [
       { name: 'Lead', lifetimeTripCount: 25, role: 'lead' },       // advanced
-      { name: 'Co-host', lifetimeTripCount: 3, role: 'coHost' },    // beginner — irrelevant to budget
-      { name: 'Support', lifetimeTripCount: 12, role: 'support' },   // intermediate — irrelevant to budget
+      { name: 'Co-host', lifetimeTripCount: 3, role: 'coHost' },    // beginner — irrelevant to budget size
+      { name: 'Support', lifetimeTripCount: 12, role: 'support' },   // intermediate — irrelevant to budget size
     ],
   });
 
-  // Adjusted profit = 15000 (same as the beginner test above). Budget must be
-  // determined by the Lead's Advanced tier alone: 30% of 15000 = 4500.
+  // Adjusted profit = 15000 (same as the beginner test above). The BUDGET
+  // (Stage 1) must be determined by the Lead's Advanced tier alone: 30%
+  // of 15000 = 4500 — the Co-host/Support tiers never change this number.
   assert.equal(result.adjustedProfit, 15000);
   assert.equal(result.hostCategory, 'advanced');
-  assert.equal(result.hostPayment, 4500);
+  assert.equal(result.hostBudget, 4500);
+
+  // Stage 2: split 5/3/2 -> raw shares 2250/1350/900. Support (Intermediate,
+  // own minimum 1000) has a raw share below their own floor, so it's
+  // bumped up to 1000 — same two-stage clamp as the dedicated tests below.
+  // hostPayment (the ACTUAL amount paid, used for Remaining/Org Profit)
+  // legitimately differs from hostBudget (4500) here, on purpose.
+  const byName = Object.fromEntries(result.hostBreakdown.map((h) => [h.name, h.amount]));
+  assert.equal(byName['Lead'], 2250);
+  assert.equal(byName['Co-host'], 1350);
+  assert.equal(byName['Support'], 1000);
+  assert.equal(result.hostPayment, 4600);
 
   const total = result.hostBreakdown.reduce((sum, h) => sum + h.amount, 0);
-  assert.equal(total, 4500);
+  assert.equal(total, 4600);
 });
 
 // ==================== Foreign trips ====================
@@ -234,6 +246,105 @@ scenarioLabel('Beginner tier — optional minimum/maximum clamp around the fixed
 
   // Leaving both blank (null) behaves exactly as before — pure fixed amount.
   assert.equal(calculateHostPayment('beginner', 15000), 500);
+});
+
+scenarioLabel('Two-stage clamp — a host\'s own minimum is honored even if it pushes the total above the Stage-1 budget', () => {
+  const settings = {
+    tshirtPrice: 250,
+    socialMediaFundPercent: 0.10,
+    hostTiers: {
+      beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: null },
+      intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: 5000 },
+      advanced: { type: 'percent', percent: 0.30, minimum: 2000, maximum: null },
+    },
+    roleWeights: { lead: 5, coHost: 3, support: 2 },
+  };
+
+  // Adjusted profit 20,000; Lead = Intermediate (15% of 20000 = 3000, within own range) -> Stage-1 budget = 3000.
+  // Split 5:3 -> Lead raw 1875, Co-host raw 1125.
+  // Co-host is Advanced (own minimum 2000) -> 1125 is below their own floor -> bumped up to 2000.
+  // Total paid = 1875 + 2000 = 3875, which exceeds the Stage-1 budget of 3000 — allowed, by design.
+  const breakdown = distributeHostBudget(
+    [
+      { name: 'Lead', lifetimeTripCount: 12, role: 'lead' },     // intermediate
+      { name: 'Co-host', lifetimeTripCount: 25, role: 'coHost' }, // advanced
+    ],
+    3000, // Stage-1 budget, already computed from the Lead's tier
+    settings
+  );
+
+  const byName = Object.fromEntries(breakdown.map((h) => [h.name, h.amount]));
+  assert.equal(byName['Lead'], 1875);
+  assert.equal(byName['Co-host'], 2000); // bumped up from raw 1125
+
+  const total = breakdown.reduce((sum, h) => sum + h.amount, 0);
+  assert.equal(total, 3875); // exceeds the 3000 Stage-1 budget, on purpose
+});
+
+scenarioLabel('Two-stage clamp — a host\'s own maximum caps their individual share downward', () => {
+  const settings = {
+    tshirtPrice: 250,
+    socialMediaFundPercent: 0.10,
+    hostTiers: {
+      beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: 800, maximum: 1200 },
+      intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: 5000 },
+      advanced: { percent: 0.30, minimum: 2000, maximum: 8000, maxTrips: undefined, type: 'percent' },
+    },
+    roleWeights: { lead: 5, coHost: 3, support: 2 },
+  };
+
+  // Adjusted profit 100,000; Lead = Advanced (30% of 100000 = 30000, capped at own max 8000) -> Stage-1 budget = 8000.
+  // Split 5:3 -> Lead raw 5000, Co-host raw 3000.
+  // Co-host is Beginner (own maximum 1200) -> 3000 exceeds their own ceiling -> capped down to 1200.
+  const breakdown = distributeHostBudget(
+    [
+      { name: 'Lead', lifetimeTripCount: 25, role: 'lead' },    // advanced
+      { name: 'Co-host', lifetimeTripCount: 3, role: 'coHost' }, // beginner
+    ],
+    8000,
+    settings
+  );
+
+  const byName = Object.fromEntries(breakdown.map((h) => [h.name, h.amount]));
+  assert.equal(byName['Lead'], 5000);
+  assert.equal(byName['Co-host'], 1200); // capped down from raw 3000
+
+  const total = breakdown.reduce((sum, h) => sum + h.amount, 0);
+  assert.equal(total, 6200); // less than the 8000 Stage-1 budget
+});
+
+scenarioLabel('Remaining/Organization Profit use the ACTUAL amount paid to hosts, not the theoretical Stage-1 budget', () => {
+  const settings = {
+    tshirtPrice: 250,
+    socialMediaFundPercent: 0.10,
+    hostTiers: {
+      beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: null },
+      intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: null },
+      advanced: { percent: 0.30, minimum: 2000, maximum: null, type: 'percent' },
+    },
+    roleWeights: { lead: 5, coHost: 3, support: 2 },
+  };
+
+  const result = calculateTripFinancials({
+    participantCount: 20,
+    packagePrice: 3000,
+    otherIncome: 0,
+    expenses: [{ category: 'Hotel', amount: 40000 }],
+    hosts: [
+      { name: 'Lead', lifetimeTripCount: 25, role: 'lead' },        // advanced
+      { name: 'Support', lifetimeTripCount: 12, role: 'support' },   // intermediate, will get clamped up
+    ],
+    settings,
+  });
+
+  // Budget (Stage 1) = 4500. Split 5:2 (weight) -> Lead 3214, Support 1286 (rounded).
+  // Support's own Intermediate minimum (1000) doesn't bind here since 1286 > 1000,
+  // so nothing is clamped in this particular split — use it to prove the
+  // baseline still matches before checking the clamped case below.
+  assert.equal(result.hostBudget, 4500);
+  assert.equal(result.hostPayment, result.hostBreakdown.reduce((sum, h) => sum + h.amount, 0));
+  assert.equal(result.remaining, result.adjustedProfit - result.hostPayment);
+  assert.equal(result.organizationProfit, result.remaining - result.socialMediaFund);
 });
 
 console.log('\nAll calculation engine tests passed.');

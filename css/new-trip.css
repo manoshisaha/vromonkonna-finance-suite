@@ -271,6 +271,16 @@
   font-size: var(--font-size-sm);
 }
 
+.live-summary__clamp-note {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  background-color: var(--color-warning-soft);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  line-height: var(--line-height-normal);
+}
+
 .live-summary__host-label {
   font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
