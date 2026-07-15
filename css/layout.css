@@ -74,6 +74,7 @@
     top: 0;
     left: 0;
     height: 100vh;
+    height: 100dvh;
     transform: translateX(-100%);
     transition: transform var(--transition-slow);
     z-index: var(--z-sidebar);

@@ -16,6 +16,27 @@ import { initInfoPopovers } from '../components/info-popover.js';
 applyStoredTheme();
 initIcons();
 initInfoPopovers();
+initSidebarScrollLock();
+
+/**
+ * Keeps <body> scroll locked while the mobile sidebar drawer is open,
+ * watching the `.app-shell[data-sidebar-open]` attribute directly so it
+ * works no matter which control (topbar hamburger button, or tapping the
+ * scrim) changed it. Without this, the page behind the drawer can still
+ * scroll — which in some in-app browsers (e.g. WhatsApp's) causes the
+ * drawer to visually scroll away with the page instead of staying pinned.
+ */
+function initSidebarScrollLock() {
+  const shell = document.querySelector('.app-shell');
+  if (!shell) return;
+
+  const sync = () => {
+    document.body.classList.toggle('sidebar-scroll-locked', shell.getAttribute('data-sidebar-open') === 'true');
+  };
+
+  sync();
+  new MutationObserver(sync).observe(shell, { attributes: true, attributeFilter: ['data-sidebar-open'] });
+}
 
 /**
  * Mounts the shared shell (sidebar + topbar) for the current page.

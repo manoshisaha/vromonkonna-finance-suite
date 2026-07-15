@@ -67,6 +67,14 @@ img {
   display: block;
 }
 
+/* Applied to <body> while the mobile sidebar drawer is open, so the page
+   behind it can't scroll — without this, some in-app browsers (e.g.
+   WhatsApp's) mis-render `position: fixed` and the drawer visually
+   scrolls away with the underlying page instead of staying pinned. */
+body.sidebar-scroll-locked {
+  overflow: hidden;
+}
+
 /* Inline-SVG icon sizing — see components/icons.js. Icons inherit color
    via currentColor and size via 1em, same as the webfont approach they
    replaced, so no other CSS needed to change. */
