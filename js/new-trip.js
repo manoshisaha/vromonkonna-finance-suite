@@ -36,7 +36,8 @@ import { calculateTripFinancials, determineHostCategory, validateHostTeam, findH
 import { getCalculationSettings } from './modules/settings-store.js';
 import { getHosts, addHost } from './modules/host-directory.js';
 import { getAllCategories } from './modules/expense-category-store.js';
-import { saveTripRemote } from './modules/trips-store.js';
+import { saveTripRemote, fetchTrips } from './modules/trips-store.js';
+import { buildParticipantDirectory } from './modules/participant-utils.js';
 import { formatBDT } from './utils/format.js';
 import { formModal } from '../components/form-modal.js';
 
@@ -97,6 +98,7 @@ let hosts = [];
 let expenseCategories = [];
 let calcSettings = null;
 let lastFinancials = null;
+let phoneDirectory = [];
 
 /** ---------- Trip type (domestic / foreign) ---------- */
 
@@ -192,6 +194,7 @@ function getHostTeam() {
 
 function addParticipantRow() {
   const row = createParticipantRow({
+    phoneDirectory,
     onChange: recalculate,
     onRemove: () => {
       updateEmptyHints();
@@ -407,7 +410,7 @@ function populateFromPrefill(trip) {
   });
 
   (trip.participants || []).forEach((p) => {
-    const row = createParticipantRow({ onChange: recalculate, onRemove: () => { updateEmptyHints(); recalculate(); } });
+    const row = createParticipantRow({ phoneDirectory, onChange: recalculate, onRemove: () => { updateEmptyHints(); recalculate(); } });
     row.querySelector('[name="name"]').value = p.name || '';
     row.querySelector('[name="phone"]').value = p.phone || '';
     row.querySelector('[name="paidAmount"]').value = p.paidAmount ?? '';
@@ -446,6 +449,19 @@ async function init() {
   } catch (err) {
     console.error(err);
     showToast('Failed to load hosts/categories/settings — check your connection', 'danger');
+  }
+
+  // Best-effort: powers phone-number autocomplete for participants. Not
+  // critical to the rest of the page, so a failure here is silent rather
+  // than blocking trip creation.
+  try {
+    const trips = await fetchTrips();
+    phoneDirectory = buildParticipantDirectory(trips).map((entry) => ({
+      phone: entry.phone,
+      name: entry.displayName,
+    }));
+  } catch (err) {
+    console.warn('Failed to load participant directory for phone autocomplete:', err.message);
   }
 
   if (prefill && prefill.trip) {

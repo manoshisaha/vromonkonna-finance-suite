@@ -11,9 +11,11 @@
 import { renderSidebar } from '../components/sidebar.js';
 import { renderTopbar, applyStoredTheme } from '../components/topbar.js';
 import { initIcons } from '../components/icons.js';
+import { initInfoPopovers } from '../components/info-popover.js';
 
 applyStoredTheme();
 initIcons();
+initInfoPopovers();
 
 /**
  * Mounts the shared shell (sidebar + topbar) for the current page.

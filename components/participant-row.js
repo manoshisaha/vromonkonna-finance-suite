@@ -5,6 +5,13 @@
  * reused by Trip History's edit view). Each row is a self-contained DOM
  * fragment with its own remove button; the parent page reads current
  * values via `getParticipantRowData()`.
+ *
+ * Phone autocomplete: if a `phoneDirectory` (array of { phone, name }
+ * from every participant across every past trip) is passed in, the phone
+ * field gets a native <datalist> of suggestions, and typing/selecting a
+ * phone number that exactly matches someone in the directory auto-fills
+ * their name (only if the Name field is still empty, so it never
+ * overwrites something the user already typed).
  */
 
 const PAYMENT_STATUSES = ['Paid', 'Partial', 'Due'];
@@ -12,14 +19,31 @@ const PAYMENT_MODES = ['Bkash', 'Bank', 'Cash', 'Other'];
 
 let rowIdCounter = 0;
 
+/** Strips non-digits and normalizes a Bangladeshi phone number for matching. */
+function normalizePhone(phone) {
+  if (!phone) return '';
+  let digits = String(phone).replace(/\D/g, '');
+  if (digits.startsWith('880')) digits = digits.slice(3);
+  if (digits && !digits.startsWith('0')) digits = `0${digits}`;
+  return digits;
+}
+
 /**
  * Creates a participant row element.
- * @param {{ onChange?: () => void, onRemove?: () => void }} [handlers]
+ * @param {{ onChange?: () => void, onRemove?: () => void, phoneDirectory?: Array<{phone: string, name: string}> }} [handlers]
  * @returns {HTMLElement}
  */
 export function createParticipantRow(handlers = {}) {
-  const { onChange, onRemove } = handlers;
+  const { onChange, onRemove, phoneDirectory = [] } = handlers;
   const rowId = `participant-${++rowIdCounter}`;
+  const datalistId = `phone-suggestions-${rowId}`;
+
+  // Build a normalized-phone -> name lookup once per row for autofill matching.
+  const phoneToName = new Map();
+  phoneDirectory.forEach((entry) => {
+    const key = normalizePhone(entry.phone);
+    if (key && !phoneToName.has(key)) phoneToName.set(key, entry.name);
+  });
 
   const row = document.createElement('div');
   row.className = 'dynamic-row';
@@ -32,7 +56,10 @@ export function createParticipantRow(handlers = {}) {
       </div>
       <div class="field field--compact">
         <label class="field__label">Phone</label>
-        <input class="field__control" type="tel" name="phone" placeholder="01XXXXXXXXX" />
+        <input class="field__control" type="tel" name="phone" placeholder="01XXXXXXXXX" list="${datalistId}" autocomplete="off" />
+        <datalist id="${datalistId}">
+          ${phoneDirectory.map((entry) => `<option value="${entry.phone}">${entry.name}</option>`).join('')}
+        </datalist>
       </div>
       <div class="field field--compact">
         <label class="field__label">Paid amount</label>
@@ -59,6 +86,16 @@ export function createParticipantRow(handlers = {}) {
       <i class="ti ti-trash" aria-hidden="true"></i>
     </button>
   `;
+
+  const phoneInput = row.querySelector('[name="phone"]');
+  const nameInput = row.querySelector('[name="name"]');
+
+  phoneInput.addEventListener('input', () => {
+    const match = phoneToName.get(normalizePhone(phoneInput.value));
+    if (match && !nameInput.value.trim()) {
+      nameInput.value = match;
+    }
+  });
 
   row.querySelectorAll('input, select').forEach((el) => {
     el.addEventListener('input', () => onChange && onChange());
