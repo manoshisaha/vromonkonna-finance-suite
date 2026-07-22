@@ -425,4 +425,70 @@ scenarioLabel('Duration-specific caps flow through the full trip calculation and
   assert.equal(result.tripDuration, 'overnight');
 });
 
+scenarioLabel('Multi-host ceiling — 2+ hosts with at least one non-Beginner uses the Advanced rate as the budget, not the Lead\'s own tier', () => {
+  // Lead is Intermediate (would normally give 15%), but a non-Beginner
+  // Co-host is present, so the budget should use Advanced's 30% instead.
+  const result = calculateTripFinancials({
+    participantCount: 10,
+    packagePrice: 4444.44, // -> exact 40,000 income for round numbers
+    otherIncome: 0,
+    expenses: [],
+    tripType: 'domestic',
+    hosts: [
+      { name: 'Lead', lifetimeTripCount: 12, role: 'lead' },      // intermediate
+      { name: 'Co-host', lifetimeTripCount: 25, role: 'coHost' },  // advanced -> triggers the ceiling
+    ],
+  });
+
+  // Adjusted profit ~= 40000 - 2500 (tshirt) = 37500 (using DEFAULT_SETTINGS' 250/participant).
+  assert.equal(result.hostCategory, 'advanced');
+  assert.equal(result.hostBudget, calculateHostPayment('advanced', result.adjustedProfit));
+});
+
+scenarioLabel('Multi-host ceiling — does NOT trigger when every host is Beginner (falls back to the Lead\'s own tier)', () => {
+  const result = calculateTripFinancials({
+    participantCount: 10,
+    packagePrice: 4444.44,
+    otherIncome: 0,
+    expenses: [],
+    tripType: 'domestic',
+    hosts: [
+      { name: 'Lead', lifetimeTripCount: 2, role: 'lead' },     // beginner
+      { name: 'Co-host', lifetimeTripCount: 5, role: 'coHost' }, // beginner
+    ],
+  });
+
+  // Both Beginner -> ceiling should NOT apply; budget stays the Lead's own (fixed) tier.
+  assert.equal(result.hostCategory, 'beginner');
+  assert.equal(result.hostBudget, 500); // DEFAULT_SETTINGS beginner fixed amount
+});
+
+scenarioLabel('Per-trip weight override — forces a custom split (e.g. 50/50) regardless of role weights', () => {
+  const breakdown = distributeHostBudget(
+    [
+      { name: 'Lead', lifetimeTripCount: 25, role: 'lead', weightOverride: 5 },
+      { name: 'Co-host', lifetimeTripCount: 25, role: 'coHost', weightOverride: 5 },
+    ],
+    12000
+  );
+
+  const byName = Object.fromEntries(breakdown.map((h) => [h.name, h.amount]));
+  assert.equal(byName['Lead'], 6000);
+  assert.equal(byName['Co-host'], 6000);
+});
+
+scenarioLabel('Per-trip weight override — only some hosts overridden, others still use their role weight', () => {
+  const breakdown = distributeHostBudget(
+    [
+      { name: 'Lead', lifetimeTripCount: 25, role: 'lead' }, // no override -> role weight 5
+      { name: 'Support', lifetimeTripCount: 25, role: 'support', weightOverride: 5 }, // overridden to match Lead
+    ],
+    10000
+  );
+
+  const byName = Object.fromEntries(breakdown.map((h) => [h.name, h.amount]));
+  assert.equal(byName['Lead'], 5000);
+  assert.equal(byName['Support'], 5000);
+});
+
 console.log('\nAll calculation engine tests passed.');

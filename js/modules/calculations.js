@@ -98,6 +98,7 @@ export function findHostsOutrankingLead(hosts, settings = DEFAULT_SETTINGS) {
  * @property {string} name
  * @property {number} lifetimeTripCount   - snapshot at time of booking; used for tier lookup
  * @property {'lead'|'coHost'|'support'} role
+ * @property {number} [weightOverride]     - optional per-trip weight, replacing the role's default weight for the split (e.g. for a genuinely 50/50-shared trip). Leave unset to use Role Weight × the tier system normally.
  */
 
 /**
@@ -165,8 +166,28 @@ export function calculateTripFinancials(input) {
     hostCategory = 'foreign';
   } else {
     const lead = hostTeam.find((h) => h.role === 'lead') || hostTeam[0];
-    hostCategory = lead ? determineHostCategory(lead.lifetimeTripCount, settings) : 'beginner';
-    hostBudget = lead ? calculateHostPayment(hostCategory, adjustedProfit, settings, input.tripDuration) : 0;
+    const leadCategory = lead ? determineHostCategory(lead.lifetimeTripCount, settings) : 'beginner';
+
+    // Multi-host budget rule: when 2+ hosts are on a trip AND at least one
+    // of them (any role) is Intermediate or Advanced, the budget uses the
+    // Advanced tier's own rate/minimum/maximum as a ceiling — regardless of
+    // which host is actually Lead. This exists so a trip with real seniority
+    // present generates a bigger pool to split, without ever exceeding the
+    // Advanced rate. It deliberately does NOT trigger for an all-Beginner
+    // multi-host team (their budget still comes from the Lead's own tier,
+    // same as a single Beginner host would get).
+    const hasSeniorHostPresent = hostTeam.some(
+      (h) => determineHostCategory(h.lifetimeTripCount, settings) !== 'beginner'
+    );
+    const useMultiHostCeiling = hostTeam.length >= 2 && hasSeniorHostPresent;
+
+    if (useMultiHostCeiling) {
+      hostCategory = 'advanced';
+      hostBudget = calculateHostPayment('advanced', adjustedProfit, settings, input.tripDuration);
+    } else {
+      hostCategory = leadCategory;
+      hostBudget = lead ? calculateHostPayment(leadCategory, adjustedProfit, settings, input.tripDuration) : 0;
+    }
   }
 
   const hostBreakdown = distributeHostBudget(hostTeam, hostBudget, settings, tripType, input.tripDuration);
@@ -366,12 +387,13 @@ export function distributeHostBudget(hosts, hostBudget, settings = DEFAULT_SETTI
   if (!hosts || hosts.length === 0) return [];
 
   const weights = settings.roleWeights || DEFAULT_SETTINGS.roleWeights;
-  const totalWeight = hosts.reduce((sum, h) => sum + (weights[h.role] || 0), 0);
+  const weightFor = (h) => (h.weightOverride != null ? h.weightOverride : (weights[h.role] || 0));
+  const totalWeight = hosts.reduce((sum, h) => sum + weightFor(h), 0);
 
   let anyClamped = false;
 
   const shares = hosts.map((h) => {
-    const weight = weights[h.role] || 0;
+    const weight = weightFor(h);
     const rawShare = totalWeight > 0
       ? safeNum(hostBudget) * (weight / totalWeight)
       : safeNum(hostBudget) / hosts.length;

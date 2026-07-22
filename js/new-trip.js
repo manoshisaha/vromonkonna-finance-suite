@@ -31,7 +31,7 @@ import { initShell, showToast } from './app.js';
 import { renderLiveSummaryPanel } from '../components/live-summary-panel.js';
 import { createParticipantRow, getParticipantRowData, setParticipantRowData, parseParticipantBulkText } from '../components/participant-row.js';
 import { createExpenseRow, getExpenseRowData } from '../components/expense-row.js';
-import { createHostRow, refreshHostRowOptions, getHostRowData, setHostRowRole, setHostRowTierDisplay, ADD_HOST_OPTION_VALUE } from '../components/host-row.js';
+import { createHostRow, refreshHostRowOptions, getHostRowData, setHostRowRole, setHostRowWeightOverride, setHostRowTierDisplay, ADD_HOST_OPTION_VALUE } from '../components/host-row.js';
 import { calculateTripFinancials, determineHostCategory, validateHostTeam, findHostsOutrankingLead } from './modules/calculations.js';
 import { getCalculationSettings } from './modules/settings-store.js';
 import { getHosts, addHost } from './modules/host-directory.js';
@@ -201,9 +201,9 @@ function updateHostCount() {
 function getHostTeam() {
   return Array.from(hostRowsEl.children)
     .map((row) => {
-      const { name, role } = getHostRowData(row);
+      const { name, role, weightOverride } = getHostRowData(row);
       const host = hosts.find((h) => h.name === name);
-      return host ? { row, name: host.name, lifetimeTripCount: host.lifetimeTripCount, role } : null;
+      return host ? { row, name: host.name, lifetimeTripCount: host.lifetimeTripCount, role, weightOverride } : null;
     })
     .filter(Boolean);
 }
@@ -332,7 +332,7 @@ function recalculate() {
     tripDuration: tripType === 'domestic' ? tripDurationSelect.value : null,
     foreignHostBaseAmount: calcSettings?.foreignTripDefaults?.baseAmount || 0,
     foreignHostRatePerParticipant: calcSettings?.foreignTripDefaults?.ratePerParticipant || 0,
-    hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
+    hosts: hostTeam.map(({ name, lifetimeTripCount, role, weightOverride }) => ({ name, lifetimeTripCount, role, weightOverride })),
     settings: calcSettings,
   });
 
@@ -354,7 +354,7 @@ function updateHostTierWarning(hostTeam, tripType) {
   }
 
   const outranking = findHostsOutrankingLead(
-    hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
+    hostTeam.map(({ name, lifetimeTripCount, role, weightOverride }) => ({ name, lifetimeTripCount, role, weightOverride })),
     calcSettings
   );
 
@@ -414,7 +414,7 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
     tripDuration: tripTypeSelect.value === 'domestic' ? tripDurationSelect.value : null,
     foreignHostBaseAmount: tripTypeSelect.value === 'foreign' ? (calcSettings?.foreignTripDefaults?.baseAmount || 0) : null,
     foreignHostRatePerParticipant: tripTypeSelect.value === 'foreign' ? (calcSettings?.foreignTripDefaults?.ratePerParticipant || 0) : null,
-    hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
+    hosts: hostTeam.map(({ name, lifetimeTripCount, role, weightOverride }) => ({ name, lifetimeTripCount, role, weightOverride })),
     packagePrice: Number(packagePriceInput.value) || 0,
     otherIncome: Number(otherIncomeInput.value) || 0,
     notes: document.getElementById('notes').value.trim(),
@@ -511,6 +511,7 @@ function applyDraftState(draft) {
     hostRowsEl.appendChild(row);
     refreshHostRowOptions(row, hosts, h.name);
     setHostRowRole(row, h.role || 'coHost');
+    setHostRowWeightOverride(row, h.weightOverride);
   });
 
   (draft.participants || []).forEach((p) => {
@@ -582,6 +583,7 @@ function populateFromPrefill(trip) {
     hostRowsEl.appendChild(row);
     refreshHostRowOptions(row, hosts, h.name);
     setHostRowRole(row, h.role || 'coHost');
+    setHostRowWeightOverride(row, h.weightOverride);
   });
 
   (trip.participants || []).forEach((p) => {

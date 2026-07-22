@@ -3,11 +3,12 @@
  *
  * A single dynamic "host" row used in New Trip's Host Team section.
  * Each row lets you pick a host from the directory (or add a new one),
- * assign their Role (Lead/Co-host/Support), and shows their tier
- * (read-only, derived from lifetime trip count — informational only;
- * only the Lead's tier ever affects the Host Budget). The page
- * controller owns all business logic — this component only renders and
- * reads/writes its own DOM.
+ * assign their Role (Lead/Co-host/Support), shows their tier (read-only,
+ * derived from lifetime trip count), and offers an optional per-trip
+ * "Weight override" — leave it blank to use the normal Role Weight
+ * automatically; fill it in only when this specific trip's split should
+ * differ from the default (e.g. two hosts who genuinely shared the work
+ * equally, entered as the same override number on both rows).
  */
 
 export const ADD_HOST_OPTION_VALUE = '__add_new_host__';
@@ -61,6 +62,10 @@ export function createHostRow(hostsList, handlers = {}) {
         <label class="field__label">Tier</label>
         <input class="field__control field__control--readonly" type="text" name="tierDisplay" readonly value="—" />
       </div>
+      <div class="field field--compact">
+        <label class="field__label">Weight override</label>
+        <input class="field__control" type="number" name="weightOverride" min="0" step="1" placeholder="Auto" />
+      </div>
     </div>
     <button type="button" class="icon-button dynamic-row__remove" aria-label="Remove host">
       <i class="ti ti-trash" aria-hidden="true"></i>
@@ -69,6 +74,7 @@ export function createHostRow(hostsList, handlers = {}) {
 
   row.querySelector('[name="hostName"]').addEventListener('change', () => onChange && onChange(row));
   row.querySelector('[name="role"]').addEventListener('change', () => onRoleChange && onRoleChange(row));
+  row.querySelector('[name="weightOverride"]').addEventListener('input', () => onRoleChange && onRoleChange(row));
   row.querySelector('.dynamic-row__remove').addEventListener('click', () => {
     row.remove();
     onRemove && onRemove();
@@ -82,17 +88,24 @@ export function refreshHostRowOptions(row, hostsList, selectedName) {
   row.querySelector('[name="hostName"]').innerHTML = hostOptionsHtml(hostsList, selectedName);
 }
 
-/** Reads the selected host name and role out of a row. */
+/** Reads the selected host name, role, and optional weight override out of a row. */
 export function getHostRowData(row) {
+  const overrideRaw = row.querySelector('[name="weightOverride"]').value;
   return {
     name: row.querySelector('[name="hostName"]').value,
     role: row.querySelector('[name="role"]').value,
+    weightOverride: overrideRaw === '' ? null : Number(overrideRaw),
   };
 }
 
 /** Sets a row's role selector value (e.g. auto-promoting the first host to Lead). */
 export function setHostRowRole(row, role) {
   row.querySelector('[name="role"]').value = role;
+}
+
+/** Sets a row's weight override value (used when restoring a draft or Edit/Duplicate prefill). */
+export function setHostRowWeightOverride(row, value) {
+  row.querySelector('[name="weightOverride"]').value = value ?? '';
 }
 
 /** Sets the read-only tier label shown in a row. */
