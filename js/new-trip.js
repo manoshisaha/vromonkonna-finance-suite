@@ -88,6 +88,13 @@ const otherIncomeInput = document.getElementById('otherIncome');
 const saveTripBtn = document.getElementById('save-trip-btn');
 
 const tripTypeSelect = document.getElementById('tripType');
+const tripDurationField = document.getElementById('tripDurationField');
+const tripDurationSelect = document.getElementById('tripDuration');
+const tripLengthSelect = document.getElementById('tripLength');
+const tripEndDateField = document.getElementById('tripEndDateField');
+const tripEndDateInput = document.getElementById('tripEndDate');
+const tripDateInput = document.getElementById('tripDate');
+const tripDateLabel = document.getElementById('tripDateLabel');
 
 const CATEGORY_LABELS = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
 
@@ -101,7 +108,30 @@ let phoneDirectory = [];
 
 /** ---------- Trip type (domestic / foreign) ---------- */
 
-tripTypeSelect.addEventListener('change', recalculate);
+function updateTripDurationVisibility() {
+  tripDurationField.hidden = tripTypeSelect.value === 'foreign';
+}
+
+tripTypeSelect.addEventListener('change', () => {
+  updateTripDurationVisibility();
+  recalculate();
+});
+tripDurationSelect.addEventListener('change', recalculate);
+updateTripDurationVisibility();
+
+/** ---------- Trip length (single day / multiple days) — independent of trip type ---------- */
+
+function updateTripLengthVisibility() {
+  const isMulti = tripLengthSelect.value === 'multi';
+  tripEndDateField.hidden = !isMulti;
+  tripEndDateInput.required = isMulti;
+  tripDateLabel.textContent = isMulti ? 'Start date' : 'Trip date';
+  tripEndDateInput.min = tripDateInput.value || '';
+}
+
+tripLengthSelect.addEventListener('change', updateTripLengthVisibility);
+tripDateInput.addEventListener('change', updateTripLengthVisibility);
+updateTripLengthVisibility();
 
 /** ---------- Hosts ---------- */
 
@@ -299,6 +329,7 @@ function recalculate() {
     otherIncome,
     expenses,
     tripType,
+    tripDuration: tripType === 'domestic' ? tripDurationSelect.value : null,
     foreignHostBaseAmount: calcSettings?.foreignTripDefaults?.baseAmount || 0,
     foreignHostRatePerParticipant: calcSettings?.foreignTripDefaults?.ratePerParticipant || 0,
     hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
@@ -357,6 +388,12 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
   const form = event.target;
   const hostTeam = getHostTeam();
   const teamErrors = validateHostTeam(hostTeam);
+  const isMultiDay = tripLengthSelect.value === 'multi';
+
+  if (isMultiDay && tripEndDateInput.value && tripEndDateInput.value < tripDateInput.value) {
+    showToast('End date can\'t be before the start date', 'warning');
+    return;
+  }
 
   if (!form.checkValidity() || teamErrors.length > 0) {
     teamErrors.forEach((msg) => showToast(msg, 'warning'));
@@ -371,8 +408,10 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
     tripId: prefill && prefill.mode === 'edit' ? prefill.trip.id : undefined,
     tripName: document.getElementById('tripName').value.trim(),
     destination: document.getElementById('destination').value.trim(),
-    tripDate: document.getElementById('tripDate').value,
+    tripDate: tripDateInput.value,
+    tripEndDate: isMultiDay ? tripEndDateInput.value : null,
     tripType: tripTypeSelect.value,
+    tripDuration: tripTypeSelect.value === 'domestic' ? tripDurationSelect.value : null,
     foreignHostBaseAmount: tripTypeSelect.value === 'foreign' ? (calcSettings?.foreignTripDefaults?.baseAmount || 0) : null,
     foreignHostRatePerParticipant: tripTypeSelect.value === 'foreign' ? (calcSettings?.foreignTripDefaults?.ratePerParticipant || 0) : null,
     hosts: hostTeam.map(({ name, lifetimeTripCount, role }) => ({ name, lifetimeTripCount, role })),
@@ -420,7 +459,10 @@ function collectDraftState() {
     tripName: document.getElementById('tripName').value,
     destination: document.getElementById('destination').value,
     tripDate: document.getElementById('tripDate').value,
+    tripLength: tripLengthSelect.value,
+    tripEndDate: tripEndDateInput.value,
     tripType: tripTypeSelect.value,
+    tripDuration: tripDurationSelect.value,
     packagePrice: packagePriceInput.value,
     otherIncome: otherIncomeInput.value,
     notes: document.getElementById('notes').value,
@@ -448,7 +490,12 @@ function applyDraftState(draft) {
   document.getElementById('tripName').value = draft.tripName || '';
   document.getElementById('destination').value = draft.destination || '';
   document.getElementById('tripDate').value = draft.tripDate || '';
+  tripLengthSelect.value = draft.tripLength || 'single';
+  tripEndDateInput.value = draft.tripEndDate || '';
+  updateTripLengthVisibility();
   tripTypeSelect.value = draft.tripType || 'domestic';
+  tripDurationSelect.value = draft.tripDuration || 'dayOnly';
+  updateTripDurationVisibility();
   packagePriceInput.value = draft.packagePrice || '';
   otherIncomeInput.value = draft.otherIncome || '';
   document.getElementById('notes').value = draft.notes || '';
@@ -503,11 +550,16 @@ function populateFromPrefill(trip) {
   document.getElementById('tripName').value = trip.tripName || '';
   document.getElementById('destination').value = trip.destination || '';
   document.getElementById('tripDate').value = trip.tripDate || '';
+  tripLengthSelect.value = trip.tripEndDate ? 'multi' : 'single';
+  tripEndDateInput.value = trip.tripEndDate || '';
+  updateTripLengthVisibility();
   packagePriceInput.value = trip.packagePrice ?? '';
   otherIncomeInput.value = trip.otherIncome ?? '';
   document.getElementById('notes').value = trip.notes || '';
 
   tripTypeSelect.value = trip.tripType || 'domestic';
+  tripDurationSelect.value = trip.tripDuration || 'dayOnly';
+  updateTripDurationVisibility();
 
   const tripHosts = trip.hosts && trip.hosts.length > 0
     ? trip.hosts

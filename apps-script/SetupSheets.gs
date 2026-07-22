@@ -13,7 +13,7 @@ function setupSheets() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   createSheetWithHeaders_(ss, 'Trips', [
-    'TripID', 'TripName', 'Destination', 'TripDate', 'TripType',
+    'TripID', 'TripName', 'Destination', 'TripDate', 'TripEndDate', 'TripType', 'TripDuration',
     'PackagePrice', 'MaxParticipants', 'OtherIncome', 'Status', 'Notes',
     'HostBudget', 'LeadHostName', 'LeadHostTierSnapshot',
     'ForeignHostBaseAmount', 'ForeignHostRatePerParticipant',

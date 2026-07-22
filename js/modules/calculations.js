@@ -38,13 +38,15 @@
  */
 
 /** Default settings — overridden by whatever the Settings page has saved. */
+export const TRIP_DURATIONS = ['dayOnly', 'dayNight', 'overnight'];
+
 export const DEFAULT_SETTINGS = {
   tshirtPrice: 250,
   socialMediaFundPercent: 0.10,
   hostTiers: {
-    beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: null },
-    intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: null },
-    advanced: { type: 'percent', percent: 0.30, minimum: 2000, maximum: null },
+    beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: null, durationCaps: {} },
+    intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: null, durationCaps: {} },
+    advanced: { type: 'percent', percent: 0.30, minimum: 2000, maximum: null, durationCaps: {} },
   },
   roleWeights: {
     lead: 5,
@@ -105,6 +107,7 @@ export function findHostsOutrankingLead(hosts, settings = DEFAULT_SETTINGS) {
  * @property {number} [otherIncome]
  * @property {Expense[]} expenses
  * @property {'domestic'|'foreign'} [tripType]        - defaults to 'domestic'
+ * @property {'dayOnly'|'dayNight'|'overnight'} [tripDuration] - domestic trips only; selects duration-specific min/max overrides if the tier defines any
  * @property {HostInput[]} [hosts]                      - preferred: full host team with roles
  * @property {number} [hostLifetimeTripCount]            - legacy single-host fallback (no `hosts` array): treated as one Lead Host
  * @property {string} [hostName]                          - legacy single-host fallback, paired with hostLifetimeTripCount
@@ -163,10 +166,10 @@ export function calculateTripFinancials(input) {
   } else {
     const lead = hostTeam.find((h) => h.role === 'lead') || hostTeam[0];
     hostCategory = lead ? determineHostCategory(lead.lifetimeTripCount, settings) : 'beginner';
-    hostBudget = lead ? calculateHostPayment(hostCategory, adjustedProfit, settings) : 0;
+    hostBudget = lead ? calculateHostPayment(hostCategory, adjustedProfit, settings, input.tripDuration) : 0;
   }
 
-  const hostBreakdown = distributeHostBudget(hostTeam, hostBudget, settings, tripType);
+  const hostBreakdown = distributeHostBudget(hostTeam, hostBudget, settings, tripType, input.tripDuration);
   // The actual cash paid to hosts — this can differ from `hostBudget` once
   // Stage 2's per-host minimum/maximum clamping kicks in (a minimum is
   // always honored even if it pushes the total above the budget). This is
@@ -189,6 +192,7 @@ export function calculateTripFinancials(input) {
     hostPayment,
     hostBreakdown,
     tripType,
+    tripDuration: input.tripDuration || null,
     remaining,
     socialMediaFund,
     organizationProfit,
@@ -276,27 +280,48 @@ export function determineHostCategory(hostLifetimeTripCount, settings = DEFAULT_
 }
 
 /**
+ * Resolves the minimum/maximum to actually use for a tier: a
+ * duration-specific override if the trip's duration has one defined,
+ * otherwise the tier's own default minimum/maximum. Domestic trips only
+ * — foreign trips don't use tiers at all, so duration never applies there.
+ * @param {Object} tier
+ * @param {'dayOnly'|'dayNight'|'overnight'} [tripDuration]
+ * @returns {{ minimum: number|null, maximum: number|null }}
+ */
+function resolveTierCaps(tier, tripDuration) {
+  const override = tripDuration && tier.durationCaps && tier.durationCaps[tripDuration];
+  if (override && (override.minimum != null || override.maximum != null)) {
+    return { minimum: override.minimum ?? null, maximum: override.maximum ?? null };
+  }
+  return { minimum: tier.minimum ?? null, maximum: tier.maximum ?? null };
+}
+
+/**
  * Computes payment for a single tier given adjusted profit. This is the
  * ONLY formula used to determine the Host Budget on domestic trips —
  * always applied once, using the Lead Host's tier alone.
  * Intermediate and advanced tiers apply a minimum floor, and optionally a
- * maximum cap (if `tier.maximum` is set to a number rather than null).
+ * maximum cap. If the trip has a duration and the tier defines a
+ * duration-specific override for it, that override's min/max is used
+ * instead of the tier's default min/max.
  */
-export function calculateHostPayment(category, adjustedProfit, settings = DEFAULT_SETTINGS) {
+export function calculateHostPayment(category, adjustedProfit, settings = DEFAULT_SETTINGS, tripDuration) {
   const tier = settings.hostTiers[category];
   if (!tier) throw new Error(`Unknown host category: ${category}`);
 
+  const { minimum, maximum } = resolveTierCaps(tier, tripDuration);
+
   if (tier.type === 'fixed') {
     let payment = tier.amount;
-    if (tier.minimum != null) payment = Math.max(payment, tier.minimum);
-    if (tier.maximum != null) payment = Math.min(payment, tier.maximum);
+    if (minimum != null) payment = Math.max(payment, minimum);
+    if (maximum != null) payment = Math.min(payment, maximum);
     return payment;
   }
 
   let payment = safeNum(adjustedProfit) * tier.percent;
-  payment = Math.max(payment, tier.minimum);
-  if (tier.maximum != null) {
-    payment = Math.min(payment, tier.maximum);
+  payment = Math.max(payment, minimum ?? 0);
+  if (maximum != null) {
+    payment = Math.min(payment, maximum);
   }
   return payment;
 }
@@ -334,9 +359,10 @@ export function calculateForeignHostBudget(baseAmount, ratePerParticipant, parti
  * @param {number} hostBudget
  * @param {Object} [settings]
  * @param {'domestic'|'foreign'} [tripType] - foreign trips skip Stage 2's per-host domestic-tier clamping entirely, since tiers don't apply to foreign trips at all
+ * @param {'dayOnly'|'dayNight'|'overnight'} [tripDuration] - selects each host's duration-specific min/max override, if their tier defines one
  * @returns {HostPaymentBreakdown[]}
  */
-export function distributeHostBudget(hosts, hostBudget, settings = DEFAULT_SETTINGS, tripType = 'domestic') {
+export function distributeHostBudget(hosts, hostBudget, settings = DEFAULT_SETTINGS, tripType = 'domestic', tripDuration) {
   if (!hosts || hosts.length === 0) return [];
 
   const weights = settings.roleWeights || DEFAULT_SETTINGS.roleWeights;
@@ -361,12 +387,13 @@ export function distributeHostBudget(hosts, hostBudget, settings = DEFAULT_SETTI
       const ownCategory = determineHostCategory(h.lifetimeTripCount, settings);
       const ownTier = settings.hostTiers[ownCategory];
       if (ownTier) {
-        if (ownTier.minimum != null && amount < ownTier.minimum) {
-          amount = ownTier.minimum;
+        const { minimum, maximum } = resolveTierCaps(ownTier, tripDuration);
+        if (minimum != null && amount < minimum) {
+          amount = minimum;
           anyClamped = true;
         }
-        if (ownTier.maximum != null && amount > ownTier.maximum) {
-          amount = ownTier.maximum;
+        if (maximum != null && amount > maximum) {
+          amount = maximum;
           anyClamped = true;
         }
       }

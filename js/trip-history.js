@@ -96,7 +96,7 @@ function renderRows() {
       <td>${escapeHtml(trip.tripName)}</td>
       <td>${escapeHtml(trip.destination)}</td>
       <td>${escapeHtml(trip.hostDisplay)}</td>
-      <td>${formatDate(trip.tripDate)}</td>
+      <td>${formatTripDateRange(trip)}</td>
       <td>${formatNumber(trip.participantCount)}</td>
       <td><span class="badge ${statusBadgeClass(trip.status)}">${trip.status}</span></td>
       <td>${formatBDT(trip.financials.grossProfit)}</td>
@@ -139,6 +139,16 @@ function updateSortIndicators() {
 function formatDate(isoDate) {
   const d = new Date(isoDate);
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/** Formats a trip's date as "15 Jul – 16 Jul 2026" if it has an end date, otherwise just the single date. */
+function formatTripDateRange(trip) {
+  if (!trip.tripEndDate) return formatDate(trip.tripDate);
+  const start = new Date(trip.tripDate);
+  const end = new Date(trip.tripEndDate);
+  const startStr = start.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+  const endStr = end.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  return `${startStr} – ${endStr}`;
 }
 
 function escapeHtml(str) {
@@ -225,7 +235,7 @@ function goToNewTripForm(trip, mode) {
   const payload = {
     mode,
     trip: mode === 'duplicate'
-      ? { ...trip, id: null, tripName: `${trip.tripName} (Copy)`, tripDate: '' }
+      ? { ...trip, id: null, tripName: `${trip.tripName} (Copy)`, tripDate: '', tripEndDate: '' }
       : trip,
   };
   sessionStorage.setItem(PREFILL_STORAGE_KEY, JSON.stringify(payload));
@@ -264,7 +274,7 @@ function printTrip(trip) {
     </head>
     <body>
       <h1>${escapeHtml(trip.tripName)}</h1>
-      <p>${escapeHtml(trip.destination)} &middot; ${escapeHtml(trip.hostDisplay)} &middot; ${formatDate(trip.tripDate)} &middot; ${trip.tripType === 'foreign' ? 'Foreign trip' : 'Domestic trip'}</p>
+      <p>${escapeHtml(trip.destination)} &middot; ${escapeHtml(trip.hostDisplay)} &middot; ${formatTripDateRange(trip)} &middot; ${trip.tripType === 'foreign' ? 'Foreign trip' : 'Domestic trip'}</p>
       <div class="summary">
         <div><span>Income</span><strong>${formatBDT(trip.financials.income)}</strong></div>
         <div><span>Total expenses</span><strong>${formatBDT(trip.financials.totalExpenses)}</strong></div>

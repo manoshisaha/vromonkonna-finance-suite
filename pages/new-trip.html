@@ -49,8 +49,20 @@
                   <input class="field__control" type="text" id="destination" name="destination" placeholder="e.g. Sajek Valley" required />
                 </div>
                 <div class="field">
-                  <label class="field__label" for="tripDate">Trip date</label>
+                  <label class="field__label" for="tripDate" id="tripDateLabel">Trip date</label>
                   <input class="field__control" type="date" id="tripDate" name="tripDate" required />
+                </div>
+                <div class="field">
+                  <label class="field__label" for="tripLength">Trip length</label>
+                  <select class="field__control" id="tripLength" name="tripLength">
+                    <option value="single">Single day</option>
+                    <option value="multi">Multiple days</option>
+                  </select>
+                </div>
+                <div class="field" id="tripEndDateField" hidden>
+                  <label class="field__label" for="tripEndDate">End date</label>
+                  <input class="field__control" type="date" id="tripEndDate" name="tripEndDate" />
+                  <span class="field-hint">The day you return.</span>
                 </div>
                 <div class="field">
                   <label class="field__label" for="tripType">Trip type</label>
@@ -59,6 +71,15 @@
                     <option value="foreign">Foreign</option>
                   </select>
                   <span class="field-hint">Foreign trips use the fixed fee set in Settings → Foreign trip defaults, instead of the tier system.</span>
+                </div>
+                <div class="field" id="tripDurationField">
+                  <label class="field__label" for="tripDuration">Trip duration</label>
+                  <select class="field__control" id="tripDuration" name="tripDuration">
+                    <option value="dayOnly">Day only</option>
+                    <option value="dayNight">Day, night journey</option>
+                    <option value="overnight">Overnight (2-day)</option>
+                  </select>
+                  <span class="field-hint">Domestic trips only — can change the Minimum/Maximum host pay caps (set in Settings).</span>
                 </div>
                 <div class="field">
                   <label class="field__label" for="packagePrice">Package price (per person)</label>

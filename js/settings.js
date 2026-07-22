@@ -26,8 +26,55 @@ initShell({
 const form = document.getElementById('settings-form');
 const logoPreview = document.getElementById('logo-preview');
 const logoFileInput = document.getElementById('logo-file-input');
+const durationTabsEl = document.getElementById('duration-tabs');
 
 let logoDataUrl = '';
+
+const DURATION_LABELS = { dayOnly: 'Day only', dayNight: 'Day, night journey', overnight: 'Overnight (2-day)' };
+
+/** Full local state for all three durations x three tiers x {minimum, maximum} — only one duration's inputs are visible at a time. */
+let durationCapsState = {
+  dayOnly: { beginner: {}, intermediate: {}, advanced: {} },
+  dayNight: { beginner: {}, intermediate: {}, advanced: {} },
+  overnight: { beginner: {}, intermediate: {}, advanced: {} },
+};
+let activeDuration = 'dayOnly';
+
+function renderDurationTabs() {
+  durationTabsEl.querySelectorAll('.fund-tab').forEach((btn) => {
+    btn.setAttribute('aria-selected', String(btn.dataset.duration === activeDuration));
+  });
+}
+
+/** Fills the visible Minimum/Maximum inputs from state for whichever duration is currently active. */
+function renderDurationCapInputs() {
+  const caps = durationCapsState[activeDuration];
+  document.getElementById('durationCapBeginnerMin').value = caps.beginner.minimum ?? '';
+  document.getElementById('durationCapBeginnerMax').value = caps.beginner.maximum ?? '';
+  document.getElementById('durationCapIntermediateMin').value = caps.intermediate.minimum ?? '';
+  document.getElementById('durationCapIntermediateMax').value = caps.intermediate.maximum ?? '';
+  document.getElementById('durationCapAdvancedMin').value = caps.advanced.minimum ?? '';
+  document.getElementById('durationCapAdvancedMax').value = caps.advanced.maximum ?? '';
+}
+
+/** Reads the currently-visible inputs back into state before switching tabs or saving, so nothing typed is lost. */
+function captureDurationCapInputs() {
+  const parse = (id) => (document.getElementById(id).value === '' ? undefined : Number(document.getElementById(id).value));
+  durationCapsState[activeDuration] = {
+    beginner: { minimum: parse('durationCapBeginnerMin'), maximum: parse('durationCapBeginnerMax') },
+    intermediate: { minimum: parse('durationCapIntermediateMin'), maximum: parse('durationCapIntermediateMax') },
+    advanced: { minimum: parse('durationCapAdvancedMin'), maximum: parse('durationCapAdvancedMax') },
+  };
+}
+
+durationTabsEl.addEventListener('click', (event) => {
+  const btn = event.target.closest('[data-duration]');
+  if (!btn) return;
+  captureDurationCapInputs();
+  activeDuration = btn.dataset.duration;
+  renderDurationTabs();
+  renderDurationCapInputs();
+});
 
 /** ---------- Load ---------- */
 
@@ -72,6 +119,27 @@ async function loadForm() {
   document.getElementById('leadWeight').value = s.roleWeights.lead;
   document.getElementById('coHostWeight').value = s.roleWeights.coHost;
   document.getElementById('supportWeight').value = s.roleWeights.support;
+
+  durationCapsState = {
+    dayOnly: {
+      beginner: { ...(s.hostTiers.beginner.durationCaps?.dayOnly || {}) },
+      intermediate: { ...(s.hostTiers.intermediate.durationCaps?.dayOnly || {}) },
+      advanced: { ...(s.hostTiers.advanced.durationCaps?.dayOnly || {}) },
+    },
+    dayNight: {
+      beginner: { ...(s.hostTiers.beginner.durationCaps?.dayNight || {}) },
+      intermediate: { ...(s.hostTiers.intermediate.durationCaps?.dayNight || {}) },
+      advanced: { ...(s.hostTiers.advanced.durationCaps?.dayNight || {}) },
+    },
+    overnight: {
+      beginner: { ...(s.hostTiers.beginner.durationCaps?.overnight || {}) },
+      intermediate: { ...(s.hostTiers.intermediate.durationCaps?.overnight || {}) },
+      advanced: { ...(s.hostTiers.advanced.durationCaps?.overnight || {}) },
+    },
+  };
+  activeDuration = 'dayOnly';
+  renderDurationTabs();
+  renderDurationCapInputs();
 
   updateTierRangeLabels();
   await renderHostsTable();
@@ -291,8 +359,21 @@ document.getElementById('reset-demo-data-btn').addEventListener('click', async (
 
 /** ---------- Save / Reset ---------- */
 
+/** Reshapes durationCapsState (keyed by duration) into the per-tier shape calculations.js expects. */
+function durationCapsByTier(tierKey) {
+  const result = {};
+  Object.keys(durationCapsState).forEach((duration) => {
+    const caps = durationCapsState[duration][tierKey] || {};
+    if (caps.minimum != null || caps.maximum != null) {
+      result[duration] = { minimum: caps.minimum ?? null, maximum: caps.maximum ?? null };
+    }
+  });
+  return result;
+}
+
 form.addEventListener('submit', async (event) => {
   event.preventDefault();
+  captureDurationCapInputs();
 
   const settings = {
     orgName: document.getElementById('orgName').value.trim() || DEFAULT_APP_SETTINGS.orgName,
@@ -314,17 +395,20 @@ form.addEventListener('submit', async (event) => {
         amount: Number(document.getElementById('beginnerAmount').value) || 0,
         minimum: document.getElementById('beginnerMinimum').value === '' ? null : Number(document.getElementById('beginnerMinimum').value),
         maximum: document.getElementById('beginnerMaximum').value === '' ? null : Number(document.getElementById('beginnerMaximum').value),
+        durationCaps: durationCapsByTier('beginner'),
       },
       intermediate: {
         maxTrips: Number(document.getElementById('intermediateMaxTrips').value) || 0,
         percent: Number(document.getElementById('intermediatePercent').value) || 0,
         minimum: Number(document.getElementById('intermediateMinimum').value) || 0,
         maximum: document.getElementById('intermediateMaximum').value === '' ? null : Number(document.getElementById('intermediateMaximum').value),
+        durationCaps: durationCapsByTier('intermediate'),
       },
       advanced: {
         percent: Number(document.getElementById('advancedPercent').value) || 0,
         minimum: Number(document.getElementById('advancedMinimum').value) || 0,
         maximum: document.getElementById('advancedMaximum').value === '' ? null : Number(document.getElementById('advancedMaximum').value),
+        durationCaps: durationCapsByTier('advanced'),
       },
     },
     roleWeights: {

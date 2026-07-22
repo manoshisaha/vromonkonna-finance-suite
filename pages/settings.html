@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="../css/sidebar.css" />
   <link rel="stylesheet" href="../css/components.css" />
   <link rel="stylesheet" href="../css/new-trip.css" />
+  <link rel="stylesheet" href="../css/funds.css" />
   <link rel="stylesheet" href="../css/settings.css" />
 
 </head>
@@ -165,6 +166,57 @@
                     <td><input type="number" id="advancedMaximum" min="0" placeholder="No cap" /></td>
                   </tr>
                 </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
+
+          <!-- Minimum/Maximum by trip duration -->
+          <section class="settings-section">
+            <div class="panel">
+              <div class="settings-section__title">
+                Minimum / maximum by trip duration
+                <span class="info-popover">
+                  <button type="button" class="info-popover__trigger" aria-label="How duration caps work">
+                    <i class="ti ti-info-circle" aria-hidden="true"></i>
+                  </button>
+                  <div class="info-popover__panel" hidden>
+                    <strong>Duration-specific caps</strong>
+                    <p>Domestic trips only. The fixed amount / percentage from Host payment tiers above stays exactly the same — only the floor (Minimum) and ceiling (Maximum) can differ depending on how long the trip runs.</p>
+                    <p>Leave a field blank to fall back to that tier's default Minimum/Maximum from the table above. You only need to fill in a field here if a specific duration should behave differently.</p>
+                  </div>
+                </span>
+              </div>
+              <div class="settings-section__hint">Applies to domestic trips only — foreign trips always use one flat fee regardless of duration.</div>
+
+              <div class="fund-tabs" id="duration-tabs" role="tablist" style="margin-bottom: var(--space-4);">
+                <button type="button" class="fund-tab" role="tab" data-duration="dayOnly" aria-selected="true">Day only</button>
+                <button type="button" class="fund-tab" role="tab" data-duration="dayNight" aria-selected="false">Day, night journey</button>
+                <button type="button" class="fund-tab" role="tab" data-duration="overnight" aria-selected="false">Overnight (2-day)</button>
+              </div>
+
+              <div style="overflow-x: auto;">
+                <table class="host-tier-table">
+                  <thead>
+                    <tr><th>Tier</th><th>Minimum</th><th>Maximum</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Beginner</td>
+                      <td><input type="number" id="durationCapBeginnerMin" min="0" placeholder="Use default" /></td>
+                      <td><input type="number" id="durationCapBeginnerMax" min="0" placeholder="Use default" /></td>
+                    </tr>
+                    <tr>
+                      <td>Intermediate</td>
+                      <td><input type="number" id="durationCapIntermediateMin" min="0" placeholder="Use default" /></td>
+                      <td><input type="number" id="durationCapIntermediateMax" min="0" placeholder="Use default" /></td>
+                    </tr>
+                    <tr>
+                      <td>Advanced</td>
+                      <td><input type="number" id="durationCapAdvancedMin" min="0" placeholder="Use default" /></td>
+                      <td><input type="number" id="durationCapAdvancedMax" min="0" placeholder="Use default" /></td>
+                    </tr>
+                  </tbody>
                 </table>
               </div>
             </div>

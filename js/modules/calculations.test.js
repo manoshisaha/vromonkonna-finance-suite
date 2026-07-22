@@ -347,4 +347,82 @@ scenarioLabel('Remaining/Organization Profit use the ACTUAL amount paid to hosts
   assert.equal(result.organizationProfit, result.remaining - result.socialMediaFund);
 });
 
+scenarioLabel('Duration-specific caps — override the tier default when the trip duration has one defined', () => {
+  const settings = {
+    tshirtPrice: 250,
+    socialMediaFundPercent: 0.10,
+    hostTiers: {
+      beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: null, durationCaps: {} },
+      intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: null, durationCaps: {} },
+      advanced: {
+        type: 'percent', percent: 0.30, minimum: 2000, maximum: null,
+        durationCaps: {
+          dayOnly: { minimum: 1500, maximum: 5000 },
+          overnight: { minimum: 3000, maximum: null },
+          // dayNight intentionally left undefined -> falls back to the tier default (2000/null)
+        },
+      },
+    },
+    roleWeights: { lead: 5, coHost: 3, support: 2 },
+  };
+
+  // Adjusted profit 10,000; Advanced = 30% of 10000 = 3000 (within every cap, no clamp needed anywhere).
+  assert.equal(calculateHostPayment('advanced', 10000, settings, 'dayOnly'), 3000);
+
+  // Adjusted profit 4,000; Advanced = 30% of 4000 = 1200.
+  // dayOnly override minimum is 1500 -> floored up to 1500 (NOT the tier default 2000).
+  assert.equal(calculateHostPayment('advanced', 4000, settings, 'dayOnly'), 1500);
+
+  // Same profit, overnight duration -> its own override minimum is 3000 -> floored up to 3000.
+  assert.equal(calculateHostPayment('advanced', 4000, settings, 'overnight'), 3000);
+
+  // Same profit, dayNight duration -> no override defined -> falls back to tier default minimum 2000.
+  assert.equal(calculateHostPayment('advanced', 4000, settings, 'dayNight'), 2000);
+
+  // No duration passed at all -> also falls back to tier default minimum 2000.
+  assert.equal(calculateHostPayment('advanced', 4000, settings), 2000);
+
+  // High profit with a dayOnly maximum override (5000) capping what would otherwise be uncapped.
+  assert.equal(calculateHostPayment('advanced', 100000, settings, 'dayOnly'), 5000);
+});
+
+scenarioLabel('Duration-specific caps flow through the full trip calculation and Stage-2 per-host clamp', () => {
+  const settings = {
+    tshirtPrice: 250,
+    socialMediaFundPercent: 0.10,
+    hostTiers: {
+      beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: null, durationCaps: {} },
+      intermediate: {
+        maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: null,
+        durationCaps: { overnight: { minimum: 2500, maximum: null } },
+      },
+      advanced: { type: 'percent', percent: 0.30, minimum: 2000, maximum: null, durationCaps: {} },
+    },
+    roleWeights: { lead: 5, coHost: 3, support: 2 },
+  };
+
+  const result = calculateTripFinancials({
+    participantCount: 20,
+    packagePrice: 3000,
+    otherIncome: 0,
+    expenses: [{ category: 'Hotel', amount: 40000 }],
+    tripType: 'domestic',
+    tripDuration: 'overnight',
+    hosts: [
+      { name: 'Lead', lifetimeTripCount: 25, role: 'lead' },      // advanced
+      { name: 'Support', lifetimeTripCount: 12, role: 'support' }, // intermediate
+    ],
+    settings,
+  });
+
+  // Adjusted profit 15000; Lead is Advanced -> budget = 30% of 15000 = 4500.
+  assert.equal(result.hostBudget, 4500);
+
+  // Split 5:2 (weight 7) -> Lead raw 3214, Support raw 1286 (rounded).
+  // Support is Intermediate; on an overnight trip their own minimum override is 2500 (not the default 1000) -> bumped up.
+  const byName = Object.fromEntries(result.hostBreakdown.map((h) => [h.name, h.amount]));
+  assert.equal(byName['Support'], 2500);
+  assert.equal(result.tripDuration, 'overnight');
+});
+
 console.log('\nAll calculation engine tests passed.');

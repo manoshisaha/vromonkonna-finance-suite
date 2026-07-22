@@ -27,17 +27,20 @@ export const DEFAULT_APP_SETTINGS = {
       amount: CALC_DEFAULTS.hostTiers.beginner.amount,
       minimum: CALC_DEFAULTS.hostTiers.beginner.minimum,
       maximum: CALC_DEFAULTS.hostTiers.beginner.maximum,
+      durationCaps: { dayOnly: {}, dayNight: {}, overnight: {} },
     },
     intermediate: {
       maxTrips: CALC_DEFAULTS.hostTiers.intermediate.maxTrips,
       percent: CALC_DEFAULTS.hostTiers.intermediate.percent * 100,
       minimum: CALC_DEFAULTS.hostTiers.intermediate.minimum,
       maximum: CALC_DEFAULTS.hostTiers.intermediate.maximum,
+      durationCaps: { dayOnly: {}, dayNight: {}, overnight: {} },
     },
     advanced: {
       percent: CALC_DEFAULTS.hostTiers.advanced.percent * 100,
       minimum: CALC_DEFAULTS.hostTiers.advanced.minimum,
       maximum: CALC_DEFAULTS.hostTiers.advanced.maximum,
+      durationCaps: { dayOnly: {}, dayNight: {}, overnight: {} },
     },
   },
   // Multi-Host Role Weights — configurable, not hardcoded. Defaults match spec.
@@ -120,6 +123,7 @@ export async function getCalculationSettings() {
         amount: s.hostTiers.beginner.amount,
         minimum: s.hostTiers.beginner.minimum ?? null,
         maximum: s.hostTiers.beginner.maximum ?? null,
+        durationCaps: s.hostTiers.beginner.durationCaps || {},
       },
       intermediate: {
         maxTrips: s.hostTiers.intermediate.maxTrips,
@@ -127,12 +131,14 @@ export async function getCalculationSettings() {
         percent: s.hostTiers.intermediate.percent / 100,
         minimum: s.hostTiers.intermediate.minimum,
         maximum: s.hostTiers.intermediate.maximum ?? null,
+        durationCaps: s.hostTiers.intermediate.durationCaps || {},
       },
       advanced: {
         type: 'percent',
         percent: s.hostTiers.advanced.percent / 100,
         minimum: s.hostTiers.advanced.minimum,
         maximum: s.hostTiers.advanced.maximum ?? null,
+        durationCaps: s.hostTiers.advanced.durationCaps || {},
       },
     },
     roleWeights: {
