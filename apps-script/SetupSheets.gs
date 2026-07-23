@@ -17,6 +17,12 @@ function setupSheets() {
     'PackagePrice', 'MaxParticipants', 'ParticipantCount', 'OtherIncome', 'Status', 'Notes',
     'HostBudget', 'LeadHostName', 'LeadHostTierSnapshot',
     'ForeignHostBaseAmount', 'ForeignHostRatePerParticipant',
+    // The Stage-1 theoretical budget (before Stage-2 per-host clamping) and
+    // why it was computed that way — needed so the "how host payment was
+    // calculated" modal can show its full step-by-step math for a SAVED
+    // trip, not just a live one. 'HostBudget' above is confusingly named —
+    // despite the name, it actually stores the Stage-2 ACTUAL amount paid.
+    'HostBudgetTheoreticalSnapshot', 'HostBudgetReasonSnapshot',
     // Snapshot of every settings-dependent result, frozen at the moment
     // the trip is saved. Income/Expenses/GrossProfit aren't included here
     // because they only depend on the trip's own numbers (participants,
@@ -36,6 +42,12 @@ function setupSheets() {
   createSheetWithHeaders_(ss, 'TripHosts', [
     'TripHostID', 'TripID', 'HostName', 'Role', 'RoleWeightSnapshot',
     'LifetimeTripCountSnapshot', 'Amount',
+    // Diagnostic snapshot for the "how host payment was calculated" modal:
+    // this host's own tier, their raw share before any clamp, why (if at
+    // all) their share was adjusted, and the total weight used in the
+    // split (needed to show "5 / 8" style fractions later).
+    'CategorySnapshot', 'RawAmountSnapshot', 'ClampReasonSnapshot',
+    'TotalWeightSnapshot', 'WeightWasOverriddenSnapshot',
   ]);
 
   createSheetWithHeaders_(ss, 'Participants', [
@@ -61,6 +73,10 @@ function setupSheets() {
 
   createSheetWithHeaders_(ss, 'ExpenseCategories', [
     'CategoryName', 'IsBuiltIn',
+  ]);
+
+  createSheetWithHeaders_(ss, 'Initiatives', [
+    'EntryID', 'Date', 'InitiativeName', 'EntryType', 'Amount', 'Description',
   ]);
 
   seedDefaultExpenseCategories_(ss);

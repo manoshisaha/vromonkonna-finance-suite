@@ -41,6 +41,11 @@ function listTrips() {
           weight: h.RoleWeightSnapshot,
           lifetimeTripCount: h.LifetimeTripCountSnapshot,
           amount: h.Amount,
+          category: h.CategorySnapshot || null,
+          rawAmount: h.RawAmountSnapshot !== '' && h.RawAmountSnapshot != null ? h.RawAmountSnapshot : null,
+          clampReason: h.ClampReasonSnapshot || null,
+          totalWeight: h.TotalWeightSnapshot !== '' && h.TotalWeightSnapshot != null ? h.TotalWeightSnapshot : null,
+          weightWasOverridden: h.WeightWasOverriddenSnapshot === true || h.WeightWasOverriddenSnapshot === 'TRUE',
         }))
       : legacySingleHostFallback_(trip);
 
@@ -59,6 +64,8 @@ function listTrips() {
       status: trip.Status,
       notes: trip.Notes,
       hostBudget: trip.HostBudget,
+      hostBudgetTheoretical: trip.HostBudgetTheoreticalSnapshot !== '' && trip.HostBudgetTheoreticalSnapshot != null ? trip.HostBudgetTheoreticalSnapshot : null,
+      hostBudgetReason: trip.HostBudgetReasonSnapshot || null,
       leadHostName: trip.LeadHostName || (hosts[0] && hosts[0].name),
       leadHostTierSnapshot: trip.LeadHostTierSnapshot,
       foreignHostBaseAmount: trip.ForeignHostBaseAmount,
@@ -113,6 +120,11 @@ function legacySingleHostFallback_(trip) {
     weight: null,
     lifetimeTripCount: trip.HostLifetimeTripCountAtBooking,
     amount: trip.HostBudget || null,
+    category: trip.LeadHostTierSnapshot || null,
+    rawAmount: trip.HostBudget || null,
+    clampReason: null,
+    totalWeight: null,
+    weightWasOverridden: false,
   }];
 }
 
@@ -151,8 +163,10 @@ function saveTrip(payload) {
     Status: payload.status || 'Upcoming',
     Notes: payload.notes || '',
     HostBudget: financials.hostPayment != null ? financials.hostPayment : '',
+    HostBudgetTheoreticalSnapshot: financials.hostBudget != null ? financials.hostBudget : '',
+    HostBudgetReasonSnapshot: financials.hostBudgetReason || '',
     LeadHostName: leadHost.name || '',
-    LeadHostTierSnapshot: financials.hostCategory || '',
+    LeadHostTierSnapshot: (financials.leadCategory != null ? financials.leadCategory : financials.hostCategory) || '',
     ForeignHostBaseAmount: payload.tripType === 'foreign' ? (payload.foreignHostBaseAmount || 0) : '',
     ForeignHostRatePerParticipant: payload.tripType === 'foreign' ? (payload.foreignHostRatePerParticipant || 0) : '',
     TshirtFundSnapshot: financials.tshirtFund != null ? financials.tshirtFund : '',
@@ -194,6 +208,11 @@ function saveTrip(payload) {
       RoleWeightSnapshot: breakdown.weight != null ? breakdown.weight : '',
       LifetimeTripCountSnapshot: h.lifetimeTripCount,
       Amount: breakdown.amount != null ? breakdown.amount : '',
+      CategorySnapshot: breakdown.category || '',
+      RawAmountSnapshot: breakdown.rawAmount != null ? breakdown.rawAmount : '',
+      ClampReasonSnapshot: breakdown.clampReason || '',
+      TotalWeightSnapshot: breakdown.totalWeight != null ? breakdown.totalWeight : '',
+      WeightWasOverriddenSnapshot: !!breakdown.weightWasOverridden,
     });
   });
 

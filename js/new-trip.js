@@ -41,6 +41,7 @@ import { buildParticipantDirectory } from './modules/participant-utils.js';
 import { formatBDT } from './utils/format.js';
 import { formModal } from '../components/form-modal.js';
 import { confirmDialog } from '../components/confirm-dialog.js';
+import { showCalculationModal } from '../components/calculation-modal.js';
 import { showLoadingState, showErrorState } from '../components/data-state.js';
 
 const PREFILL_STORAGE_KEY = 'vfs-new-trip-prefill';
@@ -69,6 +70,24 @@ function readPrefillFromSessionStorage() {
 }
 
 const summaryPanel = renderLiveSummaryPanel(document.getElementById('live-summary-slot'));
+const viewCalculationBtn = document.getElementById('view-calculation-btn');
+
+viewCalculationBtn.addEventListener('click', () => {
+  if (!lastFinancials) return;
+  const hostTeam = getHostTeam();
+  const leadHost = hostTeam.find((h) => h.role === 'lead');
+  const hostNames = hostTeam.map((h) => h.name);
+
+  showCalculationModal({
+    tripName: document.getElementById('tripName').value.trim() || 'Untitled trip',
+    destination: document.getElementById('destination').value.trim(),
+    hostDisplay: hostNames.length > 1
+      ? `${leadHost ? leadHost.name : hostNames[0]} +${hostNames.length - 1} more`
+      : (hostNames[0] || '—'),
+    tripType: tripTypeSelect.value,
+    financials: lastFinancials,
+  }, formatBDT);
+});
 
 const hostRowsEl = document.getElementById('host-rows');
 const hostEmptyHint = document.getElementById('host-empty-hint');
@@ -357,6 +376,7 @@ function recalculate() {
       remaining: 0, socialMediaFund: 0, organizationProfit: 0,
     }, formatBDT);
     lastFinancials = null;
+    viewCalculationBtn.hidden = true;
     return;
   }
 
@@ -375,6 +395,7 @@ function recalculate() {
 
   lastFinancials = result;
   summaryPanel.update(result, formatBDT);
+  viewCalculationBtn.hidden = false;
 }
 
 /**

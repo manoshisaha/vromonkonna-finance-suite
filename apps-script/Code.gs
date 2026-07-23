@@ -53,6 +53,9 @@ function doGet(e) {
         if (!e.parameter.fundType) throw new Error('fundType query parameter is required');
         data = getFundLedger(e.parameter.fundType);
         break;
+      case 'initiatives':
+        data = listInitiativeEntries();
+        break;
       default:
         throw new Error('Unknown resource: ' + resource);
     }
@@ -104,6 +107,12 @@ function doPost(e) {
         break;
       case 'deleteFundEntry':
         data = deleteFundEntry(body.entryId);
+        break;
+      case 'addInitiativeEntry':
+        data = addInitiativeEntry(body.payload);
+        break;
+      case 'deleteInitiativeEntry':
+        data = deleteInitiativeEntry(body.entryId);
         break;
       default:
         throw new Error('Unknown action: ' + action);

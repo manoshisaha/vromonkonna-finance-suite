@@ -88,8 +88,26 @@ function buildFinancialsFromSnapshot(trip, participantCount) {
     tshirtFund: snap.tshirtFund,
     adjustedProfit: snap.adjustedProfit,
     hostCategory: trip.leadHostTierSnapshot,
+    leadCategory: trip.leadHostTierSnapshot,
+    // trip.hostBudget is the ACTUAL amount paid (Stage 2) — see the naming
+    // caveat in TripsApi.gs. trip.hostBudgetTheoretical is the Stage-1
+    // number the modal calls "Host Budget"; fall back to the actual amount
+    // for trips saved before this distinction existed, so old trips still
+    // show a sensible (if not perfectly precise) number instead of blank.
+    hostBudget: trip.hostBudgetTheoretical != null ? trip.hostBudgetTheoretical : trip.hostBudget,
+    hostBudgetReason: trip.hostBudgetReason || 'single-host-tier',
     hostPayment: trip.hostBudget,
-    hostBreakdown: (trip.hosts || []).map((h) => ({ name: h.name, role: h.role, amount: h.amount })),
+    hostBreakdown: (trip.hosts || []).map((h) => ({
+      name: h.name,
+      role: h.role,
+      category: h.category ?? null,
+      weight: h.weight ?? null,
+      totalWeight: h.totalWeight ?? null,
+      weightWasOverridden: !!h.weightWasOverridden,
+      rawAmount: h.rawAmount ?? h.amount,
+      clampReason: h.clampReason ?? null,
+      amount: h.amount,
+    })),
     tripType: trip.tripType,
     tripDuration: trip.tripDuration || null,
     remaining: snap.remaining,

@@ -22,10 +22,11 @@
  * @typedef {Object} FormField
  * @property {string} name
  * @property {string} label
- * @property {'text'|'number'|'date'|'textarea'} [type]
+ * @property {'text'|'number'|'date'|'textarea'|'select'} [type]
  * @property {boolean} [required]
  * @property {number} [min]
  * @property {string} [placeholder]
+ * @property {Array<string|{value: string, label: string}>} [options] - required when type is 'select'
  */
 
 /**
@@ -91,13 +92,26 @@ export function formModal({ title, fields, submitLabel = 'Save', cancelLabel = '
 }
 
 function fieldHtml(field) {
-  const { name, label, type = 'text', required = false, min, placeholder = '' } = field;
+  const { name, label, type = 'text', required = false, min, placeholder = '', options } = field;
   const requiredAttr = required ? 'required' : '';
   const minAttr = min !== undefined ? `min="${min}"` : '';
 
-  const control = type === 'textarea'
-    ? `<textarea class="field__control" name="${name}" ${requiredAttr} placeholder="${escapeAttr(placeholder)}" style="height: auto; padding: 10px 12px;"></textarea>`
-    : `<input class="field__control" type="${type}" name="${name}" ${requiredAttr} ${minAttr} placeholder="${escapeAttr(placeholder)}" />`;
+  let control;
+  if (type === 'select') {
+    control = `
+      <select class="field__control" name="${name}" ${requiredAttr}>
+        ${(options || []).map((opt) => {
+          const value = typeof opt === 'string' ? opt : opt.value;
+          const optLabel = typeof opt === 'string' ? opt : opt.label;
+          return `<option value="${escapeAttr(value)}">${escapeHtml(optLabel)}</option>`;
+        }).join('')}
+      </select>
+    `;
+  } else if (type === 'textarea') {
+    control = `<textarea class="field__control" name="${name}" ${requiredAttr} placeholder="${escapeAttr(placeholder)}" style="height: auto; padding: 10px 12px;"></textarea>`;
+  } else {
+    control = `<input class="field__control" type="${type}" name="${name}" ${requiredAttr} ${minAttr} placeholder="${escapeAttr(placeholder)}" />`;
+  }
 
   return `
     <div class="field">

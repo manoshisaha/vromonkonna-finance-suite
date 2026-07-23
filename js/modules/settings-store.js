@@ -58,10 +58,19 @@ export const DEFAULT_APP_SETTINGS = {
   },
 };
 
-function readCache() {
+const CACHE_TTL_MS = 30 * 1000; // 30 seconds — short, since Settings drives calculation correctness directly
+
+function readCache(respectTtl) {
   try {
     const raw = localStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (respectTtl) {
+      if (!parsed.cachedAt || Date.now() - parsed.cachedAt > CACHE_TTL_MS) return null;
+      return parsed.settings;
+    }
+    // Legacy shape (no timestamp) or explicit "ignore TTL" read (offline fallback).
+    return parsed.settings || parsed;
   } catch {
     return null;
   }
@@ -69,19 +78,23 @@ function readCache() {
 
 function writeCache(settings) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(settings));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ settings, cachedAt: Date.now() }));
   } catch {
     // Non-fatal.
   }
 }
 
 /**
- * Fetches current settings from the API, merged over defaults for any
- * missing fields. Falls back to the last cached copy (or hardcoded
- * defaults) if the request fails.
+ * Fetches current settings, merged over defaults for any missing fields.
+ * Serves from cache first if it's fresh (within the TTL); otherwise
+ * fetches from the API. Falls back to any cached copy (even stale), or
+ * hardcoded defaults, if the request fails.
  * @returns {Promise<Object>}
  */
 export async function getSettings() {
+  const fresh = readCache(true);
+  if (fresh) return fresh;
+
   try {
     const fetched = await apiGet('settings');
     const merged = {
@@ -95,7 +108,7 @@ export async function getSettings() {
     return merged;
   } catch (err) {
     console.warn('Failed to fetch settings from API, using cached/default copy:', err.message);
-    return readCache() || { ...DEFAULT_APP_SETTINGS };
+    return readCache(false) || { ...DEFAULT_APP_SETTINGS };
   }
 }
 
