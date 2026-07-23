@@ -148,12 +148,9 @@
   border-radius: var(--radius-md);
 }
 
-.host-tier-warning {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  background-color: var(--color-warning-soft);
-  border: 1px solid var(--color-warning);
+.host-caps-info {
+  background-color: var(--color-accent-soft);
+  border: 1px solid var(--color-accent-soft);
   border-radius: var(--radius-md);
   padding: var(--space-3) var(--space-4);
   margin-top: var(--space-3);
@@ -161,10 +158,41 @@
   color: var(--color-text-primary);
 }
 
-.host-tier-warning__icon {
-  color: var(--color-warning);
+.host-caps-info__title {
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.host-caps-info__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  padding: var(--space-1) 0;
+}
+
+.host-caps-info__row strong {
+  color: var(--color-text-primary);
+}
+
+.track-details-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  margin-bottom: var(--space-3);
+}
+
+.track-details-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
-  margin-top: 2px;
 }
 
 /* ---------- Collapsible Live Summary panel ---------- */

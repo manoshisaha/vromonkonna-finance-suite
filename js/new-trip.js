@@ -32,7 +32,7 @@ import { renderLiveSummaryPanel } from '../components/live-summary-panel.js';
 import { createParticipantRow, getParticipantRowData, setParticipantRowData, parseParticipantBulkText } from '../components/participant-row.js';
 import { createExpenseRow, getExpenseRowData } from '../components/expense-row.js';
 import { createHostRow, refreshHostRowOptions, getHostRowData, setHostRowRole, setHostRowWeightOverride, setHostRowTierDisplay, ADD_HOST_OPTION_VALUE } from '../components/host-row.js';
-import { calculateTripFinancials, determineHostCategory, validateHostTeam, findHostsOutrankingLead } from './modules/calculations.js';
+import { calculateTripFinancials, determineHostCategory, validateHostTeam, getEffectiveHostCaps } from './modules/calculations.js';
 import { getCalculationSettings } from './modules/settings-store.js';
 import { getHosts, addHost } from './modules/host-directory.js';
 import { getAllCategories } from './modules/expense-category-store.js';
@@ -73,7 +73,7 @@ const summaryPanel = renderLiveSummaryPanel(document.getElementById('live-summar
 const hostRowsEl = document.getElementById('host-rows');
 const hostEmptyHint = document.getElementById('host-empty-hint');
 const hostCountLabel = document.getElementById('host-count-label');
-const hostTierWarning = document.getElementById('host-tier-warning');
+const hostCapsInfo = document.getElementById('host-caps-info');
 
 const participantRowsEl = document.getElementById('participant-rows');
 const expenseRowsEl = document.getElementById('expense-rows');
@@ -82,7 +82,9 @@ const expenseEmptyHint = document.getElementById('expense-empty-hint');
 const participantCountLabel = document.getElementById('participant-count-label');
 const expenseCountLabel = document.getElementById('expense-count-label');
 
-const currentParticipantsDisplay = document.getElementById('currentParticipantsDisplay');
+const participantCountInput = document.getElementById('participantCountInput');
+const trackDetailsToggle = document.getElementById('track-participant-details');
+const participantsDetailSection = document.getElementById('participants-detail-section');
 const packagePriceInput = document.getElementById('packagePrice');
 const otherIncomeInput = document.getElementById('otherIncome');
 const saveTripBtn = document.getElementById('save-trip-btn');
@@ -132,6 +134,29 @@ function updateTripLengthVisibility() {
 tripLengthSelect.addEventListener('change', updateTripLengthVisibility);
 tripDateInput.addEventListener('change', updateTripLengthVisibility);
 updateTripLengthVisibility();
+
+/** ---------- Participant tracking mode (headcount-only vs. detailed) — optional, off by default ---------- */
+
+function updateParticipantTrackingMode() {
+  const detailed = trackDetailsToggle.checked;
+  participantsDetailSection.hidden = !detailed;
+  participantCountLabel.hidden = !detailed;
+  participantCountInput.readOnly = detailed;
+  participantCountInput.classList.toggle('field__control--readonly', detailed);
+
+  if (detailed) {
+    // Switching into detailed mode: the headcount now follows the rows.
+    participantCountInput.value = String(participantRowsEl.children.length);
+    if (participantRowsEl.children.length === 0) addParticipantRow();
+  }
+}
+
+trackDetailsToggle.addEventListener('change', () => {
+  updateParticipantTrackingMode();
+  recalculate();
+});
+participantCountInput.addEventListener('input', recalculate);
+updateParticipantTrackingMode();
 
 /** ---------- Hosts ---------- */
 
@@ -285,21 +310,27 @@ document.getElementById('add-expense-btn').addEventListener('click', addExpenseR
 /** ---------- Shared recalculation ---------- */
 
 function updateEmptyHints() {
-  const participantCount = participantRowsEl.children.length;
+  const detailedCount = participantRowsEl.children.length;
   const expenseCount = expenseRowsEl.children.length;
 
-  participantEmptyHint.hidden = participantCount > 0;
+  participantEmptyHint.hidden = detailedCount > 0;
   expenseEmptyHint.hidden = expenseCount > 0;
 
-  participantCountLabel.textContent = `${participantCount} participant${participantCount === 1 ? '' : 's'}`;
+  participantCountLabel.textContent = `${detailedCount} participant${detailedCount === 1 ? '' : 's'}`;
   expenseCountLabel.textContent = `${expenseCount} expense${expenseCount === 1 ? '' : 's'}`;
-  currentParticipantsDisplay.value = String(participantCount);
+
+  // When detailed tracking is on, the headcount field auto-follows the
+  // number of rows entered — it's the source of truth in that mode. When
+  // tracking is off, the field is directly editable and this is skipped.
+  if (trackDetailsToggle.checked) {
+    participantCountInput.value = String(detailedCount);
+  }
 }
 
 function recalculate() {
   saveDraftIfApplicable();
 
-  const participantCount = participantRowsEl.children.length;
+  const participantCount = Number(participantCountInput.value) || 0;
   const packagePrice = Number(packagePriceInput.value) || 0;
   const otherIncome = Number(otherIncomeInput.value) || 0;
   const expenses = Array.from(expenseRowsEl.children).map((row) => getExpenseRowData(row));
@@ -311,7 +342,7 @@ function recalculate() {
     setHostRowTierDisplay(row, CATEGORY_LABELS[category]);
   });
 
-  updateHostTierWarning(hostTeam, tripType);
+  updateHostCapsInfo(hostTeam, tripType, tripDurationSelect.value);
 
   if (hostTeam.length === 0) {
     summaryPanel.update({
@@ -347,33 +378,52 @@ function recalculate() {
  * is purely informational so whoever is entering the trip knows what
  * they're setting up before they save.
  */
-function updateHostTierWarning(hostTeam, tripType) {
-  if (tripType === 'foreign' || hostTeam.length < 2) {
-    hostTierWarning.hidden = true;
+const DURATION_LABELS = { dayOnly: 'Day only', dayNight: 'Day, night journey', overnight: 'Overnight (2-day)' };
+
+/**
+ * Shows each host's own tier and their effective Minimum/Maximum for the
+ * currently selected trip duration — purely informational, not a warning.
+ * This replaced an older "outranking" warning that assumed the Host
+ * Budget always came from the Lead's tier alone; since the multi-host
+ * ceiling rule was added, that's no longer generally true, so a plain
+ * "here's what applies to each person" panel is both more accurate and
+ * more directly useful (shows the actual capped amount per your trip's
+ * nature — Day only / Day-night / Overnight).
+ */
+function updateHostCapsInfo(hostTeam, tripType, tripDuration) {
+  if (tripType === 'foreign' || hostTeam.length === 0 || !calcSettings) {
+    hostCapsInfo.hidden = true;
     return;
   }
 
-  const outranking = findHostsOutrankingLead(
-    hostTeam.map(({ name, lifetimeTripCount, role, weightOverride }) => ({ name, lifetimeTripCount, role, weightOverride })),
-    calcSettings
-  );
+  hostCapsInfo.hidden = false;
+  const durationLabel = DURATION_LABELS[tripDuration] || 'this trip';
 
-  if (outranking.length === 0) {
-    hostTierWarning.hidden = true;
-    return;
-  }
+  const rows = hostTeam.map(({ name, lifetimeTripCount }) => {
+    const { category, minimum, maximum } = getEffectiveHostCaps(lifetimeTripCount, calcSettings, tripDuration);
+    const min = minimum != null ? formatBDT(minimum) : 'no floor';
+    const max = maximum != null ? formatBDT(maximum) : 'no cap';
+    return `
+      <div class="host-caps-info__row">
+        <span>${escapeHtmlLocal(name)} <span class="badge badge-info">${CATEGORY_LABELS[category] || category}</span></span>
+        <strong>${min} – ${max}</strong>
+      </div>
+    `;
+  }).join('');
 
-  const names = outranking.map((h) => `${h.name} (${CATEGORY_LABELS[h.category]})`).join(', ');
-  hostTierWarning.hidden = false;
-  hostTierWarning.innerHTML = `
-    <i class="ti ti-alert-triangle host-tier-warning__icon" aria-hidden="true"></i>
-    <span>
-      <strong>${names}</strong> ${outranking.length === 1 ? 'is' : 'are'} more senior than the Lead Host,
-      but the Host Budget is set by the Lead's tier only — so ${outranking.length === 1 ? 'this host' : 'these hosts'}
-      will be paid based on the Lead's smaller/fixed rate, not their own. If that's not intended, consider making
-      the more senior host the Lead instead.
-    </span>
+  hostCapsInfo.innerHTML = `
+    <div class="host-caps-info__title">
+      <i class="ti ti-info-circle" aria-hidden="true"></i>
+      Each host's own pay range for a "${durationLabel}" trip
+    </div>
+    ${rows}
   `;
+}
+
+function escapeHtmlLocal(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
 }
 
 [packagePriceInput, otherIncomeInput].forEach((input) => {
@@ -401,7 +451,9 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
     return;
   }
 
-  const participants = Array.from(participantRowsEl.children).map((row) => getParticipantRowData(row));
+  const participants = trackDetailsToggle.checked
+    ? Array.from(participantRowsEl.children).map((row) => getParticipantRowData(row))
+    : [];
   const expenses = Array.from(expenseRowsEl.children).map((row) => getExpenseRowData(row));
 
   const payload = {
@@ -416,6 +468,7 @@ document.getElementById('new-trip-form').addEventListener('submit', async (event
     foreignHostRatePerParticipant: tripTypeSelect.value === 'foreign' ? (calcSettings?.foreignTripDefaults?.ratePerParticipant || 0) : null,
     hosts: hostTeam.map(({ name, lifetimeTripCount, role, weightOverride }) => ({ name, lifetimeTripCount, role, weightOverride })),
     packagePrice: Number(packagePriceInput.value) || 0,
+    participantCount: Number(participantCountInput.value) || 0,
     otherIncome: Number(otherIncomeInput.value) || 0,
     notes: document.getElementById('notes').value.trim(),
     participants,
@@ -453,6 +506,15 @@ function saveDraftIfApplicable() {
   }
 }
 
+document.getElementById('save-draft-btn').addEventListener('click', () => {
+  if (prefill) {
+    showToast('Drafts are only for new trips — use "Save trip" to save your edits', 'warning');
+    return;
+  }
+  saveDraftIfApplicable();
+  showToast('Draft saved — you can safely close this page and come back to it', 'success');
+});
+
 function collectDraftState() {
   return {
     savedAt: new Date().toISOString(),
@@ -464,6 +526,8 @@ function collectDraftState() {
     tripType: tripTypeSelect.value,
     tripDuration: tripDurationSelect.value,
     packagePrice: packagePriceInput.value,
+    participantCount: participantCountInput.value,
+    trackDetails: trackDetailsToggle.checked,
     otherIncome: otherIncomeInput.value,
     notes: document.getElementById('notes').value,
     hosts: Array.from(hostRowsEl.children).map((row) => getHostRowData(row)),
@@ -500,6 +564,12 @@ function applyDraftState(draft) {
   otherIncomeInput.value = draft.otherIncome || '';
   document.getElementById('notes').value = draft.notes || '';
 
+  trackDetailsToggle.checked = !!draft.trackDetails;
+  updateParticipantTrackingMode();
+  if (!draft.trackDetails) {
+    participantCountInput.value = draft.participantCount || '';
+  }
+
   (draft.hosts || []).forEach((h) => {
     if (!h.name) return;
     const row = createHostRow(hosts, {
@@ -514,15 +584,17 @@ function applyDraftState(draft) {
     setHostRowWeightOverride(row, h.weightOverride);
   });
 
-  (draft.participants || []).forEach((p) => {
-    const row = createParticipantRow({
-      phoneDirectory,
-      onChange: recalculate,
-      onRemove: () => { updateEmptyHints(); recalculate(); },
+  if (draft.trackDetails) {
+    (draft.participants || []).forEach((p) => {
+      const row = createParticipantRow({
+        phoneDirectory,
+        onChange: recalculate,
+        onRemove: () => { updateEmptyHints(); recalculate(); },
+      });
+      setParticipantRowData(row, p);
+      participantRowsEl.appendChild(row);
     });
-    setParticipantRowData(row, p);
-    participantRowsEl.appendChild(row);
-  });
+  }
 
   (draft.expenses || []).forEach((e) => {
     const row = createExpenseRow({ categories: expenseCategories, onChange: recalculate, onRemove: () => { updateEmptyHints(); recalculate(); } });
@@ -541,7 +613,7 @@ function applyDraftState(draft) {
   });
 
   if (hostRowsEl.children.length === 0) addHostRow();
-  if (participantRowsEl.children.length === 0) addParticipantRow();
+  if (trackDetailsToggle.checked && participantRowsEl.children.length === 0) addParticipantRow();
   if (expenseRowsEl.children.length === 0) addExpenseRow();
 }
 
@@ -557,6 +629,13 @@ function populateFromPrefill(trip) {
   packagePriceInput.value = trip.packagePrice ?? '';
   otherIncomeInput.value = trip.otherIncome ?? '';
   document.getElementById('notes').value = trip.notes || '';
+
+  const hadDetailedParticipants = trip.participants && trip.participants.length > 0;
+  trackDetailsToggle.checked = hadDetailedParticipants;
+  updateParticipantTrackingMode();
+  if (!hadDetailedParticipants) {
+    participantCountInput.value = trip.participantCount ?? '';
+  }
 
   tripTypeSelect.value = trip.tripType || 'domestic';
   tripDurationSelect.value = trip.tripDuration || 'dayOnly';
@@ -664,7 +743,6 @@ async function init() {
     } else {
       clearDraft();
       addHostRow();
-      addParticipantRow();
       addExpenseRow();
     }
   }

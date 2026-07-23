@@ -86,9 +86,9 @@
                   <input class="field__control" type="number" id="packagePrice" name="packagePrice" min="0" step="1" placeholder="0" required />
                 </div>
                 <div class="field">
-                  <label class="field__label" for="currentParticipantsDisplay">Current participants</label>
-                  <input class="field__control field__control--readonly" type="text" id="currentParticipantsDisplay" readonly value="0" />
-                  <span class="field-hint">Auto-counted from the Participants list below.</span>
+                  <label class="field__label" for="participantCountInput">Number of participants</label>
+                  <input class="field__control" type="number" id="participantCountInput" min="0" step="1" placeholder="0" required />
+                  <span class="field-hint" id="participantCountHint">Type the headcount directly, or turn on individual tracking below for names, phone numbers, and payment status.</span>
                 </div>
                 <div class="field">
                   <label class="field__label" for="otherIncome">Other income</label>
@@ -110,7 +110,7 @@
             </div>
             <div class="panel">
               <div class="dynamic-row-list" id="host-rows"></div>
-              <div class="host-tier-warning" id="host-tier-warning" hidden></div>
+              <div class="host-caps-info" id="host-caps-info" hidden></div>
               <div class="empty-row-hint" id="host-empty-hint">No hosts added yet — add at least one.</div>
               <button type="button" class="btn btn-secondary" id="add-host-btn">
                 <i class="ti ti-plus" aria-hidden="true"></i> Add host
@@ -125,18 +125,24 @@
           <section class="form-section">
             <div class="form-section__header">
               <span class="form-section__title">Participants</span>
-              <span class="form-section__count" id="participant-count-label">0 participants</span>
+              <span class="form-section__count" id="participant-count-label" hidden>0 participants</span>
             </div>
             <div class="panel">
-              <div class="dynamic-row-list" id="participant-rows"></div>
-              <div class="empty-row-hint" id="participant-empty-hint">No participants added yet.</div>
-              <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
-                <button type="button" class="btn btn-secondary" id="add-participant-btn">
-                  <i class="ti ti-plus" aria-hidden="true"></i> Add participant
-                </button>
-                <button type="button" class="btn btn-secondary" id="bulk-add-participants-btn">
-                  <i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Paste from Excel/CSV
-                </button>
+              <label class="track-details-toggle">
+                <input type="checkbox" id="track-participant-details" />
+                <span>Track individual participant details (names, phone numbers, payment status) — optional</span>
+              </label>
+              <div id="participants-detail-section" hidden>
+                <div class="dynamic-row-list" id="participant-rows"></div>
+                <div class="empty-row-hint" id="participant-empty-hint">No participants added yet.</div>
+                <div style="display: flex; gap: var(--space-2); flex-wrap: wrap;">
+                  <button type="button" class="btn btn-secondary" id="add-participant-btn">
+                    <i class="ti ti-plus" aria-hidden="true"></i> Add participant
+                  </button>
+                  <button type="button" class="btn btn-secondary" id="bulk-add-participants-btn">
+                    <i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Paste from Excel/CSV
+                  </button>
+                </div>
               </div>
             </div>
           </section>
@@ -158,6 +164,7 @@
 
           <div class="form-footer">
             <a class="btn btn-secondary" href="../index.html">Cancel</a>
+            <button type="button" class="btn btn-secondary" id="save-draft-btn">Save draft</button>
             <button type="submit" class="btn btn-primary" id="save-trip-btn">Save trip</button>
           </div>
         </form>

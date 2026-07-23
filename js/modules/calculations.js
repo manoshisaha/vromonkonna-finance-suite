@@ -160,13 +160,17 @@ export function calculateTripFinancials(input) {
 
   let hostBudget;
   let hostCategory;
+  let hostBudgetReason; // 'foreign-flat-fee' | 'single-host-tier' | 'multi-host-ceiling'
+  let leadCategoryForDisplay = null; // the Lead's OWN tier, even when the ceiling overrides it for budget purposes
 
   if (tripType === 'foreign') {
     hostBudget = calculateForeignHostBudget(input.foreignHostBaseAmount, input.foreignHostRatePerParticipant, input.participantCount);
     hostCategory = 'foreign';
+    hostBudgetReason = 'foreign-flat-fee';
   } else {
     const lead = hostTeam.find((h) => h.role === 'lead') || hostTeam[0];
     const leadCategory = lead ? determineHostCategory(lead.lifetimeTripCount, settings) : 'beginner';
+    leadCategoryForDisplay = leadCategory;
 
     // Multi-host budget rule: when 2+ hosts are on a trip AND at least one
     // of them (any role) is Intermediate or Advanced, the budget uses the
@@ -183,10 +187,18 @@ export function calculateTripFinancials(input) {
 
     if (useMultiHostCeiling) {
       hostCategory = 'advanced';
-      hostBudget = calculateHostPayment('advanced', adjustedProfit, settings, input.tripDuration);
+      // Deliberately NOT calculateHostPayment('advanced', ...) — that would
+      // also apply Advanced's own Minimum/Maximum to the TOTAL before any
+      // dividing happens, giving a "cap → divide → cap again" sequence.
+      // The intended process is 30% → divide → cap each host's own share
+      // (Stage 2) — a single cap, applied only after the split, per host.
+      const advancedTier = settings.hostTiers.advanced;
+      hostBudget = safeNum(adjustedProfit) * advancedTier.percent;
+      hostBudgetReason = 'multi-host-ceiling';
     } else {
       hostCategory = leadCategory;
       hostBudget = lead ? calculateHostPayment(leadCategory, adjustedProfit, settings, input.tripDuration) : 0;
+      hostBudgetReason = 'single-host-tier';
     }
   }
 
@@ -210,6 +222,8 @@ export function calculateTripFinancials(input) {
     adjustedProfit,
     hostCategory,
     hostBudget,
+    hostBudgetReason,
+    leadCategory: leadCategoryForDisplay,
     hostPayment,
     hostBreakdown,
     tripType,
@@ -318,6 +332,24 @@ function resolveTierCaps(tier, tripDuration) {
 }
 
 /**
+ * Public lookup for the UI: given a host's lifetime trip count, returns
+ * their tier and the effective minimum/maximum that would apply to their
+ * OWN individual share (Stage 2) for a given domestic trip duration — the
+ * duration-specific override if one is set, otherwise the tier's default.
+ * Not meaningful for foreign trips, which don't use tiers at all.
+ * @param {number} lifetimeTripCount
+ * @param {Object} [settings]
+ * @param {'dayOnly'|'dayNight'|'overnight'} [tripDuration]
+ * @returns {{ category: 'beginner'|'intermediate'|'advanced', minimum: number|null, maximum: number|null }}
+ */
+export function getEffectiveHostCaps(lifetimeTripCount, settings = DEFAULT_SETTINGS, tripDuration) {
+  const category = determineHostCategory(lifetimeTripCount, settings);
+  const tier = settings.hostTiers[category];
+  const { minimum, maximum } = resolveTierCaps(tier, tripDuration);
+  return { category, minimum, maximum };
+}
+
+/**
  * Computes payment for a single tier given adjusted profit. This is the
  * ONLY formula used to determine the Host Budget on domestic trips —
  * always applied once, using the Lead Host's tier alone.
@@ -394,11 +426,15 @@ export function distributeHostBudget(hosts, hostBudget, settings = DEFAULT_SETTI
 
   const shares = hosts.map((h) => {
     const weight = weightFor(h);
+    const usedOverride = h.weightOverride != null;
     const rawShare = totalWeight > 0
       ? safeNum(hostBudget) * (weight / totalWeight)
       : safeNum(hostBudget) / hosts.length;
 
     let amount = Math.round(rawShare);
+    const rawAmount = Math.round(rawShare);
+    let clampReason = null;
+    let ownCategory = null;
 
     // Stage 2: clamp to this host's OWN tier — not the Lead's — so a
     // junior host riding along on a senior-led trip still gets their own
@@ -406,22 +442,34 @@ export function distributeHostBudget(hosts, hostBudget, settings = DEFAULT_SETTI
     // own ceiling even if their weighted slice would otherwise exceed it.
     // Skipped entirely on foreign trips, where domestic tiers don't apply.
     if (tripType !== 'foreign' && h.lifetimeTripCount != null) {
-      const ownCategory = determineHostCategory(h.lifetimeTripCount, settings);
+      ownCategory = determineHostCategory(h.lifetimeTripCount, settings);
       const ownTier = settings.hostTiers[ownCategory];
       if (ownTier) {
         const { minimum, maximum } = resolveTierCaps(ownTier, tripDuration);
         if (minimum != null && amount < minimum) {
           amount = minimum;
           anyClamped = true;
+          clampReason = 'minimum';
         }
         if (maximum != null && amount > maximum) {
           amount = maximum;
           anyClamped = true;
+          clampReason = 'maximum';
         }
       }
     }
 
-    return { name: h.name, role: h.role, weight, amount };
+    return {
+      name: h.name,
+      role: h.role,
+      category: ownCategory,
+      weight,
+      weightWasOverridden: usedOverride,
+      totalWeight,
+      rawAmount,
+      clampReason,
+      amount,
+    };
   });
 
   // Only reconcile rounding drift back onto the Lead when nobody was

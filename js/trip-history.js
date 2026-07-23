@@ -18,6 +18,7 @@ import { getCalculationSettings } from './modules/settings-store.js';
 import { enrichTripWithFinancials, searchTrips, filterTrips, sortTrips, uniqueValues, uniqueHostNames } from './modules/trip-utils.js';
 import { formatBDT, formatNumber } from './utils/format.js';
 import { confirmDialog } from '../components/confirm-dialog.js';
+import { showCalculationModal } from '../components/calculation-modal.js';
 
 export const PREFILL_STORAGE_KEY = 'vfs-new-trip-prefill';
 
@@ -103,6 +104,9 @@ function renderRows() {
       <td>${formatBDT(trip.financials.organizationProfit)}</td>
       <td>
         <div class="row-actions">
+          <button type="button" class="icon-button" data-action="view-calculation" aria-label="View calculation">
+            <i class="ti ti-calculator" aria-hidden="true"></i>
+          </button>
           <button type="button" class="icon-button" data-action="edit" aria-label="Edit trip">
             <i class="ti ti-edit" aria-hidden="true"></i>
           </button>
@@ -205,7 +209,9 @@ tbody.addEventListener('click', async (event) => {
 
   const action = btn.dataset.action;
 
-  if (action === 'edit') {
+  if (action === 'view-calculation') {
+    showCalculationModal(trip, formatBDT);
+  } else if (action === 'edit') {
     goToNewTripForm(trip, 'edit');
   } else if (action === 'duplicate') {
     goToNewTripForm(trip, 'duplicate');

@@ -441,8 +441,51 @@ scenarioLabel('Multi-host ceiling — 2+ hosts with at least one non-Beginner us
   });
 
   // Adjusted profit ~= 40000 - 2500 (tshirt) = 37500 (using DEFAULT_SETTINGS' 250/participant).
+  // Budget must be a PURE 30% of adjusted profit — no min/max clamp at this
+  // stage (that would be a second, unintended cap on top of the 30% itself).
   assert.equal(result.hostCategory, 'advanced');
-  assert.equal(result.hostBudget, calculateHostPayment('advanced', result.adjustedProfit));
+  assert.equal(result.hostBudgetReason, 'multi-host-ceiling');
+  assert.equal(result.hostBudget, result.adjustedProfit * 0.30);
+});
+
+scenarioLabel('Multi-host ceiling — the budget is NOT clamped by Advanced\'s own Minimum/Maximum (only Stage 2\'s per-host clamp applies)', () => {
+  const settings = {
+    tshirtPrice: 250,
+    socialMediaFundPercent: 0.10,
+    hostTiers: {
+      beginner: { maxTrips: 8, type: 'fixed', amount: 500, minimum: null, maximum: null, durationCaps: {} },
+      intermediate: { maxTrips: 20, type: 'percent', percent: 0.15, minimum: 1000, maximum: 5000, durationCaps: {} },
+      // A tight Advanced maximum (8000) that WOULD clamp the raw 30% figure
+      // (8700) if it were applied at the budget stage — it must not be.
+      advanced: { type: 'percent', percent: 0.30, minimum: 1500, maximum: 8000, durationCaps: {} },
+    },
+    roleWeights: { lead: 5, coHost: 3, support: 2 },
+  };
+
+  const result = calculateTripFinancials({
+    participantCount: 20,
+    packagePrice: 4000,
+    otherIncome: 0,
+    expenses: [{ category: 'Hotel', amount: 46000 }],
+    tripType: 'domestic',
+    hosts: [
+      { name: 'Lead', lifetimeTripCount: 12, role: 'lead' },      // intermediate
+      { name: 'Co-host', lifetimeTripCount: 25, role: 'coHost' },  // advanced
+    ],
+    settings,
+  });
+
+  // Adjusted profit = 29000. Raw budget = 30% of 29000 = 8700 -- must stay
+  // 8700, NOT get capped down to Advanced's own maximum (8000) at this stage.
+  assert.equal(result.adjustedProfit, 29000);
+  assert.equal(result.hostBudget, 8700);
+
+  // Split 5:3 (weight 8) -> Lead raw 5437.5 -> rounds to 5438, Co-host raw 3262.5 -> rounds to 3263.
+  // Stage 2: Lead's OWN tier is Intermediate (max 5000) -> 5438 exceeds it -> capped down to 5000.
+  // Co-host's OWN tier is Advanced (min 1500, max 8000) -> 3263 is within range -> unchanged.
+  const byName = Object.fromEntries(result.hostBreakdown.map((h) => [h.name, h.amount]));
+  assert.equal(byName['Lead'], 5000);
+  assert.equal(byName['Co-host'], 3263);
 });
 
 scenarioLabel('Multi-host ceiling — does NOT trigger when every host is Beginner (falls back to the Lead\'s own tier)', () => {

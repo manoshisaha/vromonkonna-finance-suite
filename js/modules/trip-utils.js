@@ -40,7 +40,7 @@ import { calculateTripFinancials, calculateIncome, calculateExpenseTotal } from 
  * @returns {Object}
  */
 export function enrichTripWithFinancials(trip, calcSettings) {
-  const participantCount = trip.participants.length;
+  const participantCount = trip.participantCount != null ? trip.participantCount : trip.participants.length;
   const financials = trip.financialsSnapshot
     ? buildFinancialsFromSnapshot(trip, participantCount)
     : calculateTripFinancials({

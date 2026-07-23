@@ -14,7 +14,7 @@ function setupSheets() {
 
   createSheetWithHeaders_(ss, 'Trips', [
     'TripID', 'TripName', 'Destination', 'TripDate', 'TripEndDate', 'TripType', 'TripDuration',
-    'PackagePrice', 'MaxParticipants', 'OtherIncome', 'Status', 'Notes',
+    'PackagePrice', 'MaxParticipants', 'ParticipantCount', 'OtherIncome', 'Status', 'Notes',
     'HostBudget', 'LeadHostName', 'LeadHostTierSnapshot',
     'ForeignHostBaseAmount', 'ForeignHostRatePerParticipant',
     // Snapshot of every settings-dependent result, frozen at the moment
