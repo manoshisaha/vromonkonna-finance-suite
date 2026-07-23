@@ -147,12 +147,18 @@ function updateParticipantTrackingMode() {
   if (detailed) {
     // Switching into detailed mode: the headcount now follows the rows.
     participantCountInput.value = String(participantRowsEl.children.length);
-    if (participantRowsEl.children.length === 0) addParticipantRow();
   }
 }
 
 trackDetailsToggle.addEventListener('change', () => {
   updateParticipantTrackingMode();
+  // Only auto-add a starter row when the USER manually turns tracking on —
+  // not when this same update function runs during prefill/draft-restore,
+  // where recalculate() firing before hosts/trip type are set would use a
+  // stale, empty state and produce an incorrect (or blank) live summary.
+  if (trackDetailsToggle.checked && participantRowsEl.children.length === 0) {
+    addParticipantRow();
+  }
   recalculate();
 });
 participantCountInput.addEventListener('input', recalculate);
@@ -630,16 +636,16 @@ function populateFromPrefill(trip) {
   otherIncomeInput.value = trip.otherIncome ?? '';
   document.getElementById('notes').value = trip.notes || '';
 
+  tripTypeSelect.value = trip.tripType || 'domestic';
+  tripDurationSelect.value = trip.tripDuration || 'dayOnly';
+  updateTripDurationVisibility();
+
   const hadDetailedParticipants = trip.participants && trip.participants.length > 0;
   trackDetailsToggle.checked = hadDetailedParticipants;
   updateParticipantTrackingMode();
   if (!hadDetailedParticipants) {
     participantCountInput.value = trip.participantCount ?? '';
   }
-
-  tripTypeSelect.value = trip.tripType || 'domestic';
-  tripDurationSelect.value = trip.tripDuration || 'dayOnly';
-  updateTripDurationVisibility();
 
   const tripHosts = trip.hosts && trip.hosts.length > 0
     ? trip.hosts
@@ -727,7 +733,12 @@ async function init() {
   }
 
   if (prefill && prefill.trip) {
-    populateFromPrefill(prefill.trip);
+    try {
+      populateFromPrefill(prefill.trip);
+    } catch (err) {
+      console.error('Failed to populate the form from the existing trip:', err);
+      showToast('Something went wrong loading this trip\'s details — please check the form and try again', 'danger');
+    }
   } else {
     const draft = readDraft();
     const restore = draft && await confirmDialog({
